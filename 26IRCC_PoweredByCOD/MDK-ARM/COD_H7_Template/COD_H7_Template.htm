@@ -3,7 +3,7 @@
 <title>Static Call Graph - [COD_H7_Template\COD_H7_Template.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image COD_H7_Template\COD_H7_Template.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Apr  3 13:28:52 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Sat Apr  4 12:43:01 2026
 <BR><P>
 <H3>Maximum Stack Usage =        692 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -863,10 +863,11 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Info_Update
 </UL>
 
-<P><STRONG><a name="[bd]"></a>Control_Task</STRONG> (Thumb, 116 bytes, Stack size 24 bytes, control_task.o(.text.Control_Task))
+<P><STRONG><a name="[bd]"></a>Control_Task</STRONG> (Thumb, 160 bytes, Stack size 24 bytes, control_task.o(.text.Control_Task))
 <BR><BR>[Stack]<UL><LI>Max Depth = 372<LI>Call Chain = Control_Task &rArr; osDelay &rArr; vTaskDelay &rArr; xTaskResumeAll &rArr; xTaskIncrementTick &rArr; SEGGER_SYSVIEW_OnTaskStartReady &rArr; _SendPacket &rArr; _HandleIncomingPacket &rArr; SEGGER_SYSVIEW_Start &rArr;  _SendPacket (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[100]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osDelay
+<LI><a href="#[106]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Vofa_Justfloat_Transmit
 <LI><a href="#[109]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;YawSingInit
 <LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Info_Update
 <LI><a href="#[10b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Target_Update
@@ -3180,7 +3181,8 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Transmit_DMA
 </UL>
-<BR>[Called By]<UL><LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Info_Update
+<BR>[Called By]<UL><LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Task
+<LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Info_Update
 </UL>
 
 <P><STRONG><a name="[10]"></a>USBD_CDC_GetDeviceQualifierDescriptor</STRONG> (Thumb, 22 bytes, Stack size 4 bytes, usbd_cdc.o(.text.USBD_CDC_GetDeviceQualifierDescriptor))
@@ -4424,8 +4426,8 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Task
 </UL>
 
-<P><STRONG><a name="[104]"></a>Control_Info_Update</STRONG> (Thumb, 208 bytes, Stack size 24 bytes, control_task.o(.text.Control_Info_Update))
-<BR><BR>[Stack]<UL><LI>Max Depth = 164<LI>Call Chain = Control_Info_Update &rArr; USART_Vofa_Justfloat_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT &rArr; DMA_SetConfig
+<P><STRONG><a name="[104]"></a>Control_Info_Update</STRONG> (Thumb, 268 bytes, Stack size 32 bytes, control_task.o(.text.Control_Info_Update))
+<BR><BR>[Stack]<UL><LI>Max Depth = 172<LI>Call Chain = Control_Info_Update &rArr; USART_Vofa_Justfloat_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT &rArr; DMA_SetConfig
 </UL>
 <BR>[Calls]<UL><LI><a href="#[106]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Vofa_Justfloat_Transmit
 <LI><a href="#[105]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ControlYaw

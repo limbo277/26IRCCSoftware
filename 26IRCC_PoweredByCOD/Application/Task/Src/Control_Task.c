@@ -49,7 +49,7 @@ Control_Info_Typedef Control_Info;
 
 //                                  KP   KI   KD  Alpha Deadband  I_MAX   Output_MAX
 static float Chassis_PID_Param0[7] = {140.f, 0.2f, 0.f, 0.f, 0.f, 5000.f, 12000.f};
-static float Chassis_PID_Param1[7] = {100.f, 0.1f, 0.f, 0.f, 0.f, 5000.f, 12000.f};
+static float Chassis_PID_Param1[7] = {130.f, 0.1f, 0.f, 0.f, 0.f, 5000.f, 12000.f};
 
 
 /**
@@ -71,7 +71,7 @@ typedef struct{
 */
 void YawSingInit(YawSing_TypeDef *YawSing,float V_Base)
 {
-  YawSing->Kp = 20.5f;
+  YawSing->Kp = 30.5f;
   YawSing->kd = 0.1f;
   YawSing->V_Base = V_Base;
   YawSing->Wheel_distance = 0.6f;
@@ -110,7 +110,7 @@ void Control_Task(void const *argument)
     Control_Info_Update(&Control_Info);
 
     /* 调试串口输出: 当前底盘速度 */
-    // USART_Vofa_Justfloat_Transmit(Control_Info.Measure.Chassis_Velocity, 0.f, 0.f);
+    USART_Vofa_Justfloat_Transmit(Control_Info.Measure.Chassis_Velocity, Chassis_Motor[0].Data.Velocity, -Chassis_Motor[1].Data.Velocity);
     if(Control_Task_SysTick % 10 ==0 ) //100Hz任务
     {
       
@@ -147,6 +147,8 @@ switch(remote_ctrl.rc.s[1])
   case 1:
   break;
   case 2:
+  // Control_Info->SendValue[0] = 0;
+  // Control_Info->SendValue[1] = 0;
   Control_Info->Target.Chassis_Velocity = 0;
   Control_Info->Target.Chassis_AngularVelocity = 0;
   break;
@@ -185,8 +187,20 @@ static void Control_Info_Update(Control_Info_Typedef *Control_Info)
   // PID_Calculate_Position(&Chassis_PID[1], Control_Info->Target.Chassis_Velocity, Control_Info->Measure.Chassis_Velocity);
   PID_Calculate_Position(&Chassis_PID[0], Chassis_Motor[0].target_speed, Chassis_Motor[0].Data.Velocity);
   PID_Calculate_Position(&Chassis_PID[1], -Chassis_Motor[1].target_speed, Chassis_Motor[1].Data.Velocity);
+ switch(remote_ctrl.rc.s[1])
+{  case 1:
+  break;
+  case 2:
+  Control_Info->SendValue[0] = 0;
+  Control_Info->SendValue[1] = 0;
+  break;
+  case 3:
   Control_Info->SendValue[0] = (int16_t)(Chassis_PID[0].Output);
   Control_Info->SendValue[1] = (int16_t)(Chassis_PID[1].Output);
+  break;
+  default:
+  return;
+}
 }
 
 
