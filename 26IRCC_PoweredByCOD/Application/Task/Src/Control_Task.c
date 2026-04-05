@@ -51,6 +51,9 @@ Control_Info_Typedef Control_Info;
 static float Chassis_PID_Param0[7] = {140.f, 0.2f, 0.f, 0.f, 0.f, 5000.f, 12000.f};
 static float Chassis_PID_Param1[7] = {130.f, 0.1f, 0.f, 0.f, 0.f, 5000.f, 12000.f};
 
+/*初始化左右轮编码器低通滤波器*/
+LowPassFilter1p_Info_TypeDef ChassisMotorLPF1p_R0;
+LowPassFilter1p_Info_TypeDef ChassisMotorLPF1p_L0;
 /**
  * @brief 底盘速度环位置式 PID。
  */
@@ -99,7 +102,6 @@ void Control_Task(void const *argument)
 
   Control_Init(&Control_Info);
 
-  YawSingInit(&YawSing, Control_Info.Target.Chassis_Velocity);
   /* Infinite loop */
   for (;;)
   {
@@ -124,15 +126,29 @@ static void Control_Init(Control_Info_Typedef *Control_Info)
 {
 
   (void)Control_Info;
+
+  /*初始化左右轮的PID计算器*/
   PID_Init(&Chassis_PID[0], PID_POSITION, Chassis_PID_Param0);
   PID_Init(&Chassis_PID[1], PID_POSITION, Chassis_PID_Param1);
+
+  /*初始化Yaw轴角速度校正计算器*/
+  YawSingInit(&YawSing, Control_Info->Target.Chassis_Velocity);
+
+  /*初始化左右轮转速低通滤波器*/
+  LowPassFilter1p_Init(&ChassisMotorLPF1p_R0, 0.1f);
+  LowPassFilter1p_Init(&ChassisMotorLPF1p_L0, 0.1f);
+
 }
 
 static void Control_Measure_Update(Control_Info_Typedef *Control_Info)
 {
-
-  Control_Info->Measure.Chassis_Velocity = (Chassis_Motor[0].Data.Velocity + Chassis_Motor[1].Data.Velocity) / 2.f; // R0,L1
-  Control_Info->Measure.Chassis_AngularVelocity = (Chassis_Motor[1].Data.Velocity - Chassis_Motor[0].Data.Velocity) / 1.2f;
+  /* 更新底盘左右轮速度返回值并滤波，单位RPM*/
+  Control_Info->Measure.Chassis_WheelRight0_Velocity = LowPassFilter1p_Update(&ChassisMotorLPF1p_R0, Chassis_Motor[0].Data.Velocity);
+  Control_Info->Measure.Chassis_WheelLeft0_Velocity = LowPassFilter1p_Update(&ChassisMotorLPF1p_L0, Chassis_Motor[1].Data.Velocity);
+  /*更新底盘速度和角速度*/
+  Control_Info->Measure.Chassis_Velocity = 0.08*PI*(Control_Info->Measure.Chassis_WheelRight0_Velocity + Control_Info->Measure.Chassis_WheelLeft0_Velocity) / (30*2.f); // R0,L1
+  Control_Info->Measure.Chassis_AngularVelocity = 0.08*PI*(Control_Info->Measure.Chassis_WheelLeft0_Velocity - Control_Info->Measure.Chassis_WheelRight0_Velocity) / (30*0.6f);
+  
 }
 
 static void Control_Target_Update(Control_Info_Typedef *Control_Info)
@@ -153,17 +169,18 @@ static void Control_Target_Update(Control_Info_Typedef *Control_Info)
     // ch[0]右-左右
 
     /* 将遥控器通道 3 映射为目标速度 */
-    if(remote_ctrl.rc.ch[3] <-200) // 遥控器通道 3 正在给指令
+    if (remote_ctrl.rc.ch[3] < -200) // 遥控器通道 3 正在给指令
     {
       Control_Info->Target.Chassis_Velocity = -200;
     }
-    else {
-    Control_Info->Target.Chassis_Velocity = remote_ctrl.rc.ch[3] * 1.f;
+    else
+    {
+      Control_Info->Target.Chassis_Velocity = remote_ctrl.rc.ch[3] * 1.f;
     }
     /* 将遥控器通道 0 映射为目标角速度 */
     if (abs(remote_ctrl.rc.ch[0]) > 100) // 遥控器通道 0 正在给指令
     {
-      Control_Info->Target.Chassis_AngularVelocity = remote_ctrl.rc.ch[0] * 0.4f;
+      Control_Info->Target.Chassis_AngularVelocity = remote_ctrl.rc.ch[0] * 0.6f;
     }
     else
     {
@@ -178,27 +195,31 @@ static void Control_Target_Update(Control_Info_Typedef *Control_Info)
 static void Control_Info_Update(Control_Info_Typedef *Control_Info)
 {
 
+  /*获得Yaw轴角速度校正值*/
   float omega_cmd = ControlYaw(&YawSing);
+
   /* 计算左右轮目标速度 */
-  Chassis_Motor[1].target_speed = (Control_Info->Target.Chassis_Velocity + Control_Info->Target.Chassis_AngularVelocity * 0.3f - omega_cmd);
-  Chassis_Motor[0].target_speed = (Control_Info->Target.Chassis_Velocity - Control_Info->Target.Chassis_AngularVelocity * 0.3f + omega_cmd);
-  USART_Vofa_Justfloat_Transmit(Chassis_Motor[0].target_speed, Chassis_Motor[1].target_speed, Control_Info->Target.Chassis_Velocity);
-  /* PID 输出转换为电机控制量(int16 CAN 负载)。 */
-  // PID_Calculate_Position(&Chassis_PID[0], Control_Info->Target.Chassis_Velocity, Control_Info->Measure.Chassis_Velocity);
-  // PID_Calculate_Position(&Chassis_PID[1], Control_Info->Target.Chassis_Velocity, Control_Info->Measure.Chassis_Velocity);
-  PID_Calculate_Position(&Chassis_PID[0], Chassis_Motor[0].target_speed, Chassis_Motor[0].Data.Velocity);
-  PID_Calculate_Position(&Chassis_PID[1], -Chassis_Motor[1].target_speed, Chassis_Motor[1].Data.Velocity);
+  Chassis_Motor[1].target_speed = (Control_Info->Target.Chassis_Velocity + Control_Info->Target.Chassis_AngularVelocity * 0.6f - omega_cmd);
+  Chassis_Motor[0].target_speed = (Control_Info->Target.Chassis_Velocity - Control_Info->Target.Chassis_AngularVelocity * 0.6f + omega_cmd);
+
+  /*PID计算输出值*/
+  PID_Calculate_Position(&Chassis_PID[0], Chassis_Motor[0].target_speed, Control_Info->Measure.Chassis_WheelRight0_Velocity);
+  PID_Calculate_Position(&Chassis_PID[1], -Chassis_Motor[1].target_speed, Control_Info->Measure.Chassis_WheelLeft0_Velocity);
+
   switch (remote_ctrl.rc.s[1])
   {
   case 1:
+  /*左上*/
     break;
   case 2:
+  /*左下*/
     Control_Info->SendValue[0] = 0;
     Control_Info->SendValue[1] = 0;
     break;
   case 3:
-    Control_Info->SendValue[0] = (int16_t)(Chassis_PID[0].Output);
-    Control_Info->SendValue[1] = (int16_t)(Chassis_PID[1].Output);
+  /*左中*/
+    Control_Info->SendValue[0] = (int16_t)Chassis_PID[0].Output;
+    Control_Info->SendValue[1] = (int16_t)Chassis_PID[1].Output;
     break;
   default:
     return;
