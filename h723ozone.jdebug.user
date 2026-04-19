@@ -1,0 +1,44 @@
+
+
+GraphedExpression="(INS).YawTotalAngle", Color=#e56a6f
+OpenDocument="stm32h7xx_it.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/Core/Src/stm32h7xx_it.c", Line=104
+OpenDocument="main.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/Core/Src/main.c", Line=65
+OpenDocument="robot_cmd.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/application/cmd/robot_cmd.c", Line=0
+OpenDocument="robot_cmd.h", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/application/cmd/robot_cmd.h", Line=0
+OpenDocument="BMI088driver.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/imu/BMI088driver.c", Line=0
+OpenDocument="BMI088Middleware.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/imu/BMI088Middleware.c", Line=0
+OpenDocument="BMI088Middleware.h", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/imu/BMI088Middleware.h", Line=0
+OpenDocument="chassis.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/application/chassis/chassis.c", Line=0
+OpenDocument="tasks.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/Middlewares/Third_Party/FreeRTOS/Source/tasks.c", Line=15
+OpenDocument="dji_motor.h", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/motor/DJImotor/dji_motor.h", Line=51
+OpenDocument="dji_motor.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/motor/DJImotor/dji_motor.c", Line=0
+OpenDocument="ins_task.c", FilePath="F:/LICHUANG/2025Game/AAASoftware/OpenSrc/Yuelu/Test/basic_framework_mc02-master/modules/imu/ins_task.c", Line=123
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=1, w=874, h=207, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Source Files", DockArea=LEFT, x=0, y=0, w=913, h=377, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=3, w=874, h=219, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=1, w=913, h=219, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=3, w=913, h=200, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Data Sampling", DockArea=LEFT, x=0, y=2, w=913, h=181, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=1, UniformSampleSpacing=0
+OpenWindow="Timeline", DockArea=RIGHT, x=0, y=2, w=874, h=288, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="1 ns / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="655;0", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="266;0", CodeGraphLegendShown=0, CodeGraphLegendPosition="278;0"
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=2560, h=326, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="FreeRTOS", DockArea=RIGHT, x=0, y=0, w=874, h=263, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, Showing="Task List"
+SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
+TableHeader="Vector Catches", SortCol="Description", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;546]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;126;587]
+TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[148;131;126;100;140;229]
+TableHeader="Source Files", SortCol="File", SortOrder="ASCENDING", VisibleCols=["File";"Status";"Size";"#Insts";"Path"], ColWidths=[204;100;100;100;932]
+TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[128;100;100;100;100;119;100;100;100]
+TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";" (INS).YawTotalAngle"], ColWidths=[100;100;696]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="Task List", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Name";"Run Count";"Priority";"Status";"Timeout";"Stack Info";"ID";"Mutex Count";"Notified Value";"Notify State"], ColWidths=[110;110;110;110;110;110;110;110;110;147]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[203;349;166;178]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;376]
+WatchedExpression="SysTime", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="pwm_instance", Window=Watched Data 1
+WatchedExpression="bmi088_data", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="bmi088_test", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="robot_state", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="INS", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="rc_data", RefreshRate=5, Window=Watched Data 1
