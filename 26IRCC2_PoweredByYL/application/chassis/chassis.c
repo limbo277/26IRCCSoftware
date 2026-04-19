@@ -41,7 +41,7 @@ void ChassisInit() {
         .can_init_config = &hcan1, // 修改为对应的CAN接口
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp = 4.5f,
+                .Kp = 60.5f,
                 .Ki = .0f,
                 .Kd = .0f,
                 .IntegralLimit = 3000,

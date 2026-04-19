@@ -58,8 +58,8 @@ static void RemoteControlSet(void)
         Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
     }
     //差速底盘只有角速度和Vx
-    Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1;//左拨杆竖直方向，控制前后速度
-    Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_;//右拨杆左右方向，控制左右速度
+    Chassis_Cmd_Send.vx = 2*rc_data[TEMP].rc.rocker_l1;//左拨杆竖直方向，控制前后速度
+    Chassis_Cmd_Send.wz = 0.5*rc_data[TEMP].rc.rocker_r_;//右拨杆左右方向，控制左右速度
 }
 /* 机器人核心控制任务,200Hz频率运行(必须高于视觉发送频率) */
 void RobotCMDTask()
