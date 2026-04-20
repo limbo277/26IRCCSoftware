@@ -142,9 +142,8 @@ typedef struct
     float vx;           // 前进方向速度
     float vy;           // 横移方向速度
     float wz;           // 旋转速度
-    float offset_angle; // 底盘和归中位置的夹角
-    float now_yaw_angle;
-    float target_angle;
+    float Current_Yaw_Angle;
+    float Current_Yaw_Angular_Velocity;
     chassis_mode_e chassis_mode;
     int chassis_speed_buff;
     // UI部分

@@ -18,25 +18,34 @@ static  Chassis_Ctrl_Cmd_s Chassis_Cmd_Recv;//底盘接收到的控制命令
 static  Chassis_Upload_Data_s Chassis_Feedback_Data;//底盘回传的反馈数据
 
 static DJIMotorInstance *Motor_Lf, *Motor_Lb, *Motor_Rf, *Motor_Rb;//左前1，左后4，右前2，右后3
-static PIDInstance chassis_follow_yaw_controller;
+static PIDInstance Yaw_Angle_Controller, Yaw_Angle_Velocity_Controller;//用于底盘跟随yaw角度的pid控制器
 
 static float Chassis_Target_Velocity = 0,Chassis_Target_Angular_Velocity = 0;//底盘的目标线速度和角速度
 static volatile float Chassis_Target_VLF = 0,Chassis_Target_VLB = 0,Chassis_Target_VRF = 0,Chassis_Target_VRB=0;//每个轮子的目标速度
 
+static void Chassis_Angle_Compensator_Init(PID_Init_Config_s *Yaw_Angle,PID_Init_Config_s *Yaw_Angle_Velocity) {
+
+    PIDInit(&Yaw_Angle_Controller, Yaw_Angle);//初始化角度补偿环
+    PIDInit(&Yaw_Angle_Velocity_Controller, Yaw_Angle_Velocity);//初始化角速度补偿环
+
+}
+static void Chassis_Angle_Compensator() {
+
+}
 void ChassisInit() {
     //四个轮子的参数是一样的，只是ID和转速有差别从后往前看顺时针左上为ID1
     Motor_Init_Config_s Chassis_Motor_config ={
         .can_init_config = &hcan1, // 修改为对应的CAN接口
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp = 10.0f,
-                .Ki = 10.0f,
-                .Kd = 0.0f,
+                .Kp = 300.0f,//40
+                .Ki = 10.7f,
+                .Kd = 2.1f,
                 .IntegralLimit = 5000,
-                .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_OutputFilter | PID_DerivativeFilter,
-                .MaxOut = 15000,
-                .Output_LPF_RC = 0.005f,
-                .Derivative_LPF_RC = 1.0f,
+                .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_OutputFilter,
+                .MaxOut = 25000,
+                .Output_LPF_RC =  0.1,
+                .Derivative_LPF_RC = 0.52f,
             },
             .current_PID = {
                 .Kp = 0.5, // 0.5
@@ -44,7 +53,7 @@ void ChassisInit() {
                 .Kd = 0,
                 .IntegralLimit = 3000,
                 .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
-                .MaxOut = 15000,
+                .MaxOut = 25000,
             },
         },
         .controller_setting_init_config = {
@@ -87,13 +96,14 @@ void ChassisInit() {
     Chassis_Pub = PubRegister("Chassis_Feed",sizeof(Chassis_Upload_Data_s));
 
 }
+
 static void MecanumCalculate()
 {
 
-    Chassis_Target_VLF = Chassis_Target_Velocity - Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
-    Chassis_Target_VLB = Chassis_Target_Velocity - Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
-    Chassis_Target_VRF = Chassis_Target_Velocity + Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
-    Chassis_Target_VRB = Chassis_Target_Velocity + Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
+    Chassis_Target_VLF = Chassis_Target_Velocity + Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
+    Chassis_Target_VLB = Chassis_Target_Velocity + Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
+    Chassis_Target_VRF = Chassis_Target_Velocity - Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
+    Chassis_Target_VRB = Chassis_Target_Velocity - Chassis_Target_Angular_Velocity * (TRACK_WIDTH/2.0f);
 
 }
 
@@ -142,7 +152,8 @@ void ChassisTask()
 
     Chassis_Target_Velocity = Chassis_Cmd_Recv.vx;
     Chassis_Target_Angular_Velocity = Chassis_Cmd_Recv.wz;
-
+    // Chassis_Target_Angular_Velocity = Chassis_Cmd_Recv.offset_angle * -0.6;
+    float pid_output = PIDCalculate(&chassis_follow_yaw_controller, 测量, 目标);
     MecanumCalculate();
     UpdateMotorRef();
 

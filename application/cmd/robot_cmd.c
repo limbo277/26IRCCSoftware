@@ -30,13 +30,15 @@ static Vision_Send_s vision_send_data;  // 视觉发送数据
 
 static Robot_Status_e Robot_State;//机器人整体工作状态
 
-BMI088Instance *bmi088_test;
-BMI088_Data_t bmi088_data;
+static attitude_t *IMU_data;
 
-static float target_yaw = 0;
+static float target_yaw = 0, yaw_offset = 0;
 
 void RobotCMDInit()
 {
+
+    IMU_data = INS_Init();//获取陀螺仪数据指针
+
     rc_data = RemoteControlInit(&huart5);   // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
     vision_recv_data = VisionInit(&huart9); // 视觉通信串口
 
@@ -60,25 +62,36 @@ static void RemoteControlSet(void)
     else if (switch_is_mid(rc_data[TEMP].rc.switch_left)) {
         Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
     }
-    //差速底盘只有角速度和Vx
-    Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
-    Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.08f;
-    // target_yaw += Chassis_Cmd_Send.wz;
+    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
+        //差速底盘只有角速度和Vx
+        Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+        Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    }
+    else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
+        Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
+        Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    }
+
+    // target_yaw += rc_data[TEMP].rc.rocker_r_ * 0.005f;
     //
-    // while (target_yaw - Chassis_Cmd_Send.now_yaw_angle >= 180.0f)
+    // while (target_yaw - IMU_data->Yaw >= 180.0f)
     // {
     //     target_yaw -= 360.0f;
     // }
-    // while (target_yaw - Chassis_Cmd_Send.now_yaw_angle <= -180.0f)
+    // while (target_yaw - IMU_data->Yaw <= -180.0f)
     // {
     //     target_yaw += 360.0f;
     // }
+    // yaw_offset = target_yaw - IMU_data->Yaw;
+    // Chassis_Cmd_Send.offset_angle = yaw_offset;
 }
 /* 机器人核心控制任务,200Hz频率运行(必须高于视觉发送频率) */
 void RobotCMDTask()
 {
     VisionSend(&vision_send_data);
     RemoteControlSet();
+    Chassis_Cmd_Send.Current_Yaw_Angle = IMU_data->Yaw;
+    Chassis_Cmd_Send.Current_Yaw_Angular_Velocity = IMU_data->Gyro[Z];
     SubGetMessage(Chassis_Feed_Sub, (void *)&Chassis_Fetch_Data);
     PubPushMessage(Chassis_Cmd_Pub, (void *)&Chassis_Cmd_Send);
 
