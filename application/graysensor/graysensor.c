@@ -23,8 +23,8 @@ static GrayscaleData_t *grayscale_data = NULL; // 灰度传感器数据指针
 void GraysensorInit()
 {
     // 初始化灰度传感器 (使用USART8)
-    extern UART_HandleTypeDef huart8;
-    grayscale_data = GrayscaleInit(&huart8);
+    extern UART_HandleTypeDef huart10;
+    grayscale_data = GrayscaleInit(&huart10);
 
     // 注册消息发布订阅
     Graysensor_Sub = SubRegister("Graysensor_Cmd", sizeof(Graysensor_Ctrl_Cmd_s));

@@ -16,7 +16,7 @@ static GrayscaleData_t grayscale_data;
 uint8_t tx_flag = 0;
 
 // 协议解析相关变量
-#define PACKAGE_SIZE 128  // 根据实际协议调整
+#define PACKAGE_SIZE 128U  // 根据实际协议调整
 static uint8_t ir_start = 0;
 static uint8_t ir_step = 0;
 static uint8_t ir_rx_buff[PACKAGE_SIZE];
@@ -83,22 +83,25 @@ static void GrayscaleRxCallback()
                     // 处理A模式数据 (模拟值)
                     if (new_package[0] == '$' && new_package[1] == 'A')
                     {
-                        char* strArray[10] = {NULL};
+                        char* strArray[15] = {NULL};
+                        char* strArraytemp[2] = {NULL};
                         char str_temp[PACKAGE_SIZE] = {'\0'};
+                        char mystr_temp[8][20] = {'\0'}; //临时备份
 
-                        strcpy(str_temp, (char*)new_package);
-                        char *p_hash = strchr(str_temp, '#');
-                        if(p_hash) *p_hash = '\0';
+                        // 去掉末尾的 '#'
+                        strncpy(str_temp, (char*)new_package, strlen((char*)new_package) - 1);
 
                         splitString(strArray, str_temp, ",");
 
-                        // 解析8个传感器的模拟值
-                        for(int i = 0; i < 8 && strArray[i+1] != NULL; i++)
+                        // 遍历数组，注意 strArray[0] 是 "$A"
+                        // 实际数据项从 strArray[1] 到 strArray[8]
+                        for (int k = 0; k < 8 && strArray[k+1] != NULL; k++)
                         {
-                            char *colon = strchr(strArray[i+1], ':');
-                            if(colon)
+                            strcpy(mystr_temp[k], strArray[k+1]);
+                            splitString(strArraytemp, mystr_temp[k], ":");
+                            if (strArraytemp[1] != NULL)
                             {
-                                grayscale_data.sensor_values[i] = atoi(colon + 1);
+                                grayscale_data.sensor_values[k] = atoi(strArraytemp[1]);
                             }
                         }
 
@@ -229,4 +232,3 @@ void GrayscaleClearNewPackageFlag()
 {
     grayscale_data.new_package_flag = 0;
 }
-
