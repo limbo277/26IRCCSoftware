@@ -87,6 +87,7 @@ typedef enum
     CHASSIS_NO_FOLLOW,         // 不跟随，允许全向平移
     CHASSIS_FOLLOW_GIMBAL_YAW, // 跟随模式，底盘叠加角度环控制
     CHASSIS_NORMAL,
+    CHASSIS_AGV_MODE,
 } chassis_mode_e;
 
 // 云台模式设置

@@ -143,6 +143,7 @@ modules/message_center/message_center.c \
 modules/daemon/daemon.c \
 modules/alarm/buzzer.c \
 modules/grayscale/grayscale.c \
+modules/vofa/vofa_usart.c \
 application/chassis/chassis.c \
 application/cmd/robot_cmd.c \
 application/graysensor/graysensor.c \
@@ -260,6 +261,7 @@ C_INCLUDES =  \
 -Imodules/daemon \
 -Imodules/alarm \
 -Imodules/grayscale \
+-Imodules/vofa \
 -Imodules \
 -IMiddlewares/ST/ARM/DSP/Inc \
 -IMiddlewares/ST/ARM/DSP/Include/dsp \
@@ -288,7 +290,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # link script
 LDSCRIPT = STM32H723VGTx_FLASH.ld
 # libraries
-LIBS = -lc -lm -lnosys -larm_cortexM7lfdp_math
+LIBS = -lc -lm -larm_cortexM7lfdp_math
 LIBDIR = -LDrivers/CMSIS/DSP/Lib/GCC
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections,--print-memory-usage
 
