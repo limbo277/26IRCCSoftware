@@ -7,7 +7,6 @@
 #include "grayscale.h"
 #include "message_center.h"
 #include "vofa/vofa_usart.h"
-// #include "vofa_usart.h"
 #include "usart.h"
 // 消息发布订阅
 static Publisher_t *Graysensor_Pub;  // 发布灰度传感器的数据

@@ -58,7 +58,15 @@ __attribute__((noreturn)) void StartINSTASK(void const *argument)
 {
     static float ins_start;
     static float ins_dt;
-    INS_Init(); // 确保BMI088被正确初始化.
+    INS_Init(); // 确保BMI088被正确初始化.0
+//   static BuzzzerInstance *robocmd_alarm;
+//   Buzzer_config_s buzzer_config ={
+//     .alarm_level = ALARM_LEVEL_HIGH, //设置警报等级 同一状态下 高等级的响应
+//     .loudness=  0.4, //设置响度
+//     .octave=  OCTAVE_1, // 设置音阶
+// };
+  // robocmd_alarm = BuzzerRegister(&buzzer_config);
+  // AlarmSetStatus(robocmd_alarm, ALARM_ON);
     LOGINFO("[freeRTOS] INS Task Start");
     for (;;)
     {
@@ -66,6 +74,7 @@ __attribute__((noreturn)) void StartINSTASK(void const *argument)
         ins_start = DWT_GetTimeline_ms();
         INS_Task();
         ins_dt = DWT_GetTimeline_ms() - ins_start;
+      // if (ins_dt >2) AlarmSetStatus(robocmd_alarm, ALARM_OFF);
         if (ins_dt > 1)
             LOGERROR("[freeRTOS] INS Task is being DELAY! dt = [%f]", &ins_dt);
         VisionSend(); // 解算完成后发送视觉数据,但是当前的实现不太优雅,后续若添加硬件触发需要重新考虑结构的组织

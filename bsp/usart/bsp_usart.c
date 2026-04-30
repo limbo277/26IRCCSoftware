@@ -16,6 +16,7 @@
 /* usart service instance, modules' info would be recoreded here using USARTRegister() */
 /* usart服务实例,所有注册了usart的模块信息会被保存在这里 */
 static uint8_t idx;
+static ALIGN_32BYTES(USARTInstance usart_instances[DEVICE_USART_CNT]);
 static USARTInstance *usart_instance[DEVICE_USART_CNT] = {NULL};
 
 /**
@@ -46,7 +47,7 @@ USARTInstance *USARTRegister(USART_Init_Config_s *init_config)
             while (1)
                 LOGERROR("[bsp_usart] USART instance already registered!");
 
-    USARTInstance *instance = (USARTInstance *)malloc(sizeof(USARTInstance));
+    USARTInstance *instance = &usart_instances[idx];
     memset(instance, 0, sizeof(USARTInstance));
 
     instance->usart_handle = init_config->usart_handle;

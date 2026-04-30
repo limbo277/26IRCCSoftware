@@ -72,7 +72,7 @@ typedef enum
 typedef struct
 {
 	Enemy_Color_e enemy_color;
-	Work_Mode_e work_mode;
+	Work_Mode_e work_mode;//模式选择
 	Bullet_Speed_e bullet_speed;
 
 	float yaw;

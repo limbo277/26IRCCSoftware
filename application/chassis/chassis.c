@@ -25,7 +25,7 @@ static PIDInstance Yaw_Angle_Controller,
 static float Chassis_Target_Velocity = 0,
              Chassis_Target_Angular_Velocity = 0; // 底盘的目标线速度和角速度
 static float Target_wz_offset = 0;
-
+static float Target_Yaw_offset = 0;
 static volatile float Chassis_Target_VLF = 0, Chassis_Target_VLB = 0,
                       Chassis_Target_VRF = 0,
                       Chassis_Target_VRB = 0; // 每个轮子的目标速度
@@ -40,15 +40,15 @@ void ChassisInit() {
                   {
 
                       .Kp = 712.4f, // 40
-                      .Ki = 50.7f,
-                      .Kd = 32.6f,
+                      .Ki = 23.2f,
+                      .Kd = 44.856f,
                       .IntegralLimit = 5000,
                       .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit |
                                  PID_Derivative_On_Measurement |
                                  PID_OutputFilter,
                       .MaxOut = 25000,
-                      .Output_LPF_RC = 0.41f,
-                      .Derivative_LPF_RC = 0.52f,
+                      .Output_LPF_RC = 0.3989f,
+                      .Derivative_LPF_RC = 0.443f,
                   },
               .current_PID =
                   {
@@ -93,24 +93,25 @@ void ChassisInit() {
   PID_Init_Config_s Yaw_Angle_Compensator_Config = {
       .Kp = 0.8,
       .Ki = 0.0,
-      .Kd = 0.01,
-      .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit |
-                 PID_Derivative_On_Measurement | PID_OutputFilter,
+      .Kd = 0.1,
+      // 对于角度这类由于跨越 ±180° 会发生瞬间跳变的量，绝对不能开启 PID_Derivative_On_Measurement（测量值微分）
+      // 否则跨越 180 的瞬间测量值会跳变 360，导致 D 项算出几万的数值，让电机疯摇乃至转圈
+      .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_OutputFilter,
       .IntegralLimit = 2000,
       .MaxOut = 5000,
-      .DeadBand = 2,
+      .DeadBand = 0,
       .Output_LPF_RC = 0.1,
   };
 
   PID_Init_Config_s Yaw_Angle_Velocity_Compensator_Config = {
       .Kp = 10.0,
       .Ki = 0.0,
-      .Kd = 0.5,
+      .Kd = 1.2,
       .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit |
                  PID_Derivative_On_Measurement | PID_OutputFilter,
       .IntegralLimit = 2000,
       .MaxOut = 5000,
-      .DeadBand = 0,
+      .DeadBand = 2.f,
       .Output_LPF_RC = 0.1,
   };
 
@@ -157,9 +158,15 @@ void EnableAllMotor() {
 void ChassisAngleOffet() {
   //航向修正算法
   if (Chassis_Cmd_Recv.wz == 0) {
+    // Target_Yaw_offset =
+    //     PIDCalculate(&Yaw_Angle_Controller, -Chassis_Cmd_Recv.yaw_angle,
+    //     -Chassis_Cmd_Recv.target_yaw_angle);
+    // Target_wz_offset = PIDCalculate(&Yaw_Angle_Velocity_Controller,
+    //                     -Chassis_Cmd_Recv.yaw_angle_speed, Target_Yaw_offset);
     Target_wz_offset =
         PIDCalculate(&Yaw_Angle_Controller, -Chassis_Cmd_Recv.yaw_angle,
-                     -Chassis_Cmd_Recv.target_yaw_angle);
+        -Chassis_Cmd_Recv.target_yaw_angle);
+
     Chassis_Target_Angular_Velocity = Target_wz_offset;
   } else {
     Target_wz_offset = 0.0f; // 清除偏移量
@@ -185,10 +192,10 @@ void ChassisTask() {
     EnableAllMotor();
     Chassis_Target_Velocity = Chassis_Cmd_Recv.vx;
     ChassisAngleOffet();
-
+    break; // 添加缺失的 break
   case CHASSIS_AGV_MODE:
     EnableAllMotor();
-
+    Chassis_Target_Velocity = Chassis_Cmd_Recv.vx; // 补充在 AGV 模式下读入线速度，否则无法前后移动
     ChassisAngleOffet();
 
     break;

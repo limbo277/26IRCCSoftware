@@ -115,6 +115,14 @@ static void RemoteControlSet(void) {
 
   Chassis_Cmd_Send.yaw_angle_speed = IMU_data->Gyro[2];
 }
+static void VisionSend_Data(void) {
+        vision_send_data.yaw = IMU_data->Yaw;
+        vision_send_data.pitch = IMU_data->Pitch;
+        vision_send_data.roll = IMU_data->Roll;
+}
+static void GrayJudge(void) {
+
+}
 
 /* 机器人核心控制任务,200Hz频率运行(必须高于视觉发送频率) */
 void RobotCMDTask() {
@@ -122,8 +130,10 @@ void RobotCMDTask() {
   // 订阅底盘消息和灰度传感器消息
   SubGetMessage(Chassis_Feed_Sub, (void *)&Chassis_Fetch_Data);
   SubGetMessage(Graysensor_Feed_Sub, (void *)&Graysensor_Fetch_Data);
+
   /*Control Code Begin*/
-  VisionSend(&vision_send_data);
+  VisionSend_Data();
+  VisionSend();
   RemoteControlSet();
 
   /*Control Code End*/
