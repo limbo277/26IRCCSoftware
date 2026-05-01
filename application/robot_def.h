@@ -226,6 +226,7 @@ typedef struct
 typedef struct
 {
     uint16_t sensor_values[8];  // 8路灰度传感器值
+    float   sensor_Normalized[6]; // 8路灰度传感器归一化值,根据预设的黑白基准值进行线性归一化
     uint8_t data_valid;         // 数据有效标志
     uint8_t sensor_online;      // 传感器在线状态
 } Graysensor_Upload_Data_s;

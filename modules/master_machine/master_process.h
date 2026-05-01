@@ -41,8 +41,8 @@ typedef struct
 	Target_State_e target_state;
 	Target_Type_e target_type;
 
-	float pitch;
-	float yaw;
+	float target_yaw;
+	float tracing_id;
 } Vision_Recv_s;
 
 typedef enum

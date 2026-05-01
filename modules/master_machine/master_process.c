@@ -128,7 +128,7 @@ static uint8_t *vis_recv_buff;
 static void DecodeVision(uint16_t recv_len)
 {
     uint16_t flag_register;
-    get_protocol_info(vis_recv_buff, &flag_register, (uint8_t *)&recv_data.pitch);
+    get_protocol_info(vis_recv_buff, &flag_register, (uint8_t *)&recv_data.target_yaw);
     // TODO: code to resolve flag_register;
 }
 

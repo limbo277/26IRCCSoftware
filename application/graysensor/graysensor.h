@@ -1,10 +1,16 @@
 //
 // Created by LIMBO on 2026/4/21.
 //
-
 #ifndef INC_26IRCCSOFTWARE_GRAYSENSOR_H
 #define INC_26IRCCSOFTWARE_GRAYSENSOR_H
 
+#include "main.h"
+
+typedef struct {
+  uint16_t black_base;
+  uint16_t white_base;
+}GrayCalib_t;
+;
 /**
  * @brief 灰度传感器应用初始化,请在开启RTOS之前调用
  *

@@ -154,9 +154,9 @@ void EnableAllMotor() {
   DJIMotorEnable(Motor_Rf);
   DJIMotorEnable(Motor_Rb);
 }
-void ChassisAngleOffet() {
+float ChassisAngleOffet(float cmd_yaw_speed) {
   //航向修正算法
-  if (Chassis_Cmd_Recv.wz == 0) {
+  if (cmd_yaw_speed == 0) {
     // Target_Yaw_offset =
     //     PIDCalculate(&Yaw_Angle_Controller, -Chassis_Cmd_Recv.yaw_angle,
     //     -Chassis_Cmd_Recv.target_yaw_angle);
@@ -166,12 +166,10 @@ void ChassisAngleOffet() {
         PIDCalculate(&Yaw_Angle_Controller, -Chassis_Cmd_Recv.yaw_angle,
         -Chassis_Cmd_Recv.target_yaw_angle);
 
-    Chassis_Target_Angular_Velocity = Target_wz_offset;
+    return Target_wz_offset;
   } else {
     Target_wz_offset = 0.0f; // 清除偏移量
-    Chassis_Target_Angular_Velocity =
-        PIDCalculate(&Yaw_Angle_Velocity_Controller,
-                     -Chassis_Cmd_Recv.yaw_angle_speed, Chassis_Cmd_Recv.wz);
+    return PIDCalculate(&Yaw_Angle_Velocity_Controller,-Chassis_Cmd_Recv.yaw_angle_speed, cmd_yaw_speed);
   }
 }
 void ChassisGraySensorAGV() {}
@@ -190,12 +188,12 @@ void ChassisTask() {
   case CHASSIS_NORMAL:
     EnableAllMotor();
     Chassis_Target_Velocity = Chassis_Cmd_Recv.vx;
-    ChassisAngleOffet();
+    Chassis_Target_Angular_Velocity = ChassisAngleOffet(Chassis_Cmd_Recv.wz);
     break; // 添加缺失的 break
   case CHASSIS_AGV_MODE:
     EnableAllMotor();
     Chassis_Target_Velocity = Chassis_Cmd_Recv.vx; // 补充在 AGV 模式下读入线速度，否则无法前后移动
-    ChassisAngleOffet();
+    Chassis_Target_Angular_Velocity = ChassisAngleOffet(0.5*PIDCalculate(&Yaw_Angle_Controller, -Chassis_Cmd_Recv.yaw_angle, -Chassis_Cmd_Recv.target_yaw_angle));
 
     break;
   default:
