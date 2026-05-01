@@ -7,7 +7,7 @@
 #define VISION_RECV_SIZE 18u // 当前为固定值,36字节
 #define VISION_SEND_SIZE 36u
 
-#pragma pack(1)
+#pragma pack(1)// 对齐方式为1字节
 typedef enum
 {
 	NO_FIRE = 0,
@@ -49,7 +49,7 @@ typedef enum
 {
 	COLOR_NONE = 0,
 	COLOR_BLUE = 1,
-	COLOR_RED = 2,
+	COLOR_YELLOW = 2,
 } Enemy_Color_e;
 
 typedef enum
@@ -76,8 +76,10 @@ typedef struct
 	Bullet_Speed_e bullet_speed;
 
 	float yaw;
-	float pitch;
-	float roll;
+        float laser_ranging_L0;
+        float laser_ranging_L1;
+        float laser_ranging_R0;
+        float laser_ranging_R1;
 } Vision_Send_s;
 #pragma pack()
 
@@ -109,6 +111,15 @@ void VisionSetFlag(Enemy_Color_e enemy_color, Work_Mode_e work_mode, Bullet_Spee
  * @param yaw
  * @param pitch
  */
-void VisionSetAltitude(float yaw, float pitch, float roll);
+void VisionSetAltitude(float yaw);
 
+/**
+ * @brief 设置发送数据的激光距离部分
+ *
+ * @param laser_ranging_L0 左激光距离
+ * @param laser_ranging_L1 左激光距离1
+ * @param laser_ranging_R0 右激光距离0
+ * @param laser_ranging_R1 右激光距离1
+ */
+void VisionSetLaserRanging(float laser_ranging_L0, float laser_ranging_L1, float laser_ranging_R0, float laser_ranging_R1);
 #endif // !MASTER_PROCESS_H

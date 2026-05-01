@@ -37,7 +37,6 @@ static Graysensor_Upload_Data_s
 
 static RC_ctrl_t *rc_data;              // 遥控器数据,初始化时返回
 static Vision_Recv_s *vision_recv_data; // 视觉接收数据指针,初始化时返回
-static Vision_Send_s vision_send_data;  // 视觉发送数据
 /*消息中心↑*/
 static Robot_Status_e Robot_State; // 机器人整体工作状态
 
@@ -49,8 +48,7 @@ static float Target_Yaw_Angele = 0, Target_Yaw_Angular_Velocity = 0,
 void RobotCMDInit() {
 
   IMU_data = INS_Init(); // 获取陀螺仪数据指针
-  rc_data = RemoteControlInit(
-      &huart5); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
+  rc_data = RemoteControlInit(&huart5); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
   vision_recv_data = VisionInit(&huart9); // 视觉通信串口
 
   Target_Yaw_Angele = IMU_data->Yaw;
@@ -116,9 +114,7 @@ static void RemoteControlSet(void) {
   Chassis_Cmd_Send.yaw_angle_speed = IMU_data->Gyro[2];
 }
 static void VisionSend_Data(void) {
-        vision_send_data.yaw = IMU_data->Yaw;
-        vision_send_data.pitch = IMU_data->Pitch;
-        vision_send_data.roll = IMU_data->Roll;
+        VisionSetAltitude(IMU_data->Yaw);
 }
 static void GrayJudge(void) {
 

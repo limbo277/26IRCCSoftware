@@ -5,7 +5,6 @@
 #include "referee_task.h"
 #include "robot_def.h"
 #include "super_cap.h"
-
 #include "arm_math.h"
 #include "bsp_dwt.h"
 #include "general_def.h"
@@ -123,7 +122,7 @@ void ChassisInit() {
   Chassis_Pub = PubRegister("Chassis_Feed", sizeof(Chassis_Upload_Data_s));
 }
 
-static void MecanumCalculate() {
+static void DifferCalculate() {
 
   Chassis_Target_VLF = Chassis_Target_Velocity +
                        Chassis_Target_Angular_Velocity * (TRACK_WIDTH / 2.0f);
@@ -205,7 +204,7 @@ void ChassisTask() {
   // Temp_Target_wz = PIDCalculate(&Yaw_Angle_Controller,
   // Chassis_Cmd_Recv.offset_angle, 0.0f);
 
-  MecanumCalculate();
+  DifferCalculate();
   UpdateMotorRef();
 
   PubPushMessage(

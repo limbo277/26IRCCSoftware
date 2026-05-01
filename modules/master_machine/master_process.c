@@ -27,12 +27,20 @@ void VisionSetFlag(Enemy_Color_e enemy_color, Work_Mode_e work_mode, Bullet_Spee
     send_data.bullet_speed = bullet_speed;
 }
 
-void VisionSetAltitude(float yaw, float pitch, float roll)
+void VisionSetLaserRanging(float laser_ranging_L0, float laser_ranging_L1, float laser_ranging_R0, float laser_ranging_R1)
+{
+    send_data.laser_ranging_L0 = laser_ranging_L0;
+    send_data.laser_ranging_L1 = laser_ranging_L1;
+    send_data.laser_ranging_R0 = laser_ranging_R0;
+    send_data.laser_ranging_R1 = laser_ranging_R1;
+}
+void VisionSetAltitude(float yaw)
 {
     send_data.yaw = yaw;
-    send_data.pitch = pitch;
-    send_data.roll = roll;
+    // send_data.pitch = pitch;
+    // send_data.roll = roll;
 }
+
 
 /**
  * @brief 离线回调函数,将在daemon.c中被daemon task调用
@@ -150,7 +158,7 @@ void VisionSend()
     // TODO: code to set flag_register
     flag_register = 30 << 8 | 0b00000001;
     // 将数据转化为seasky协议的数据包
-    get_protocol_send_data(0x02, flag_register, &send_data.yaw, 3, send_buff, &tx_len);
+    get_protocol_send_data(0x02, flag_register, &send_data.yaw, 5, send_buff, &tx_len);
     USBTransmit(send_buff, tx_len);
 }
 
