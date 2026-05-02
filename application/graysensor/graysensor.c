@@ -30,6 +30,7 @@ void Graysensor_Kalman_Init() {
     Gray_KF[i].P_data[0] = 10.0f;             // 初始协方差 P = [10]
     Gray_KF[i].Q_data[0] = 0.001f;            // 过程噪声 Q = [0.001]
     Gray_KF[i].R_data[0] = 50.0f;             // 量测噪声 R = [50]
+    Gray_KF[i].H_data[0] = 1.0f;          // 观测矩阵 H = [1]
     Gray_KF[i].StateMinVariance[0] = 0.01f;   // 最小方差抑制过度收敛
     Gray_KF[i].UseAutoAdjustment = 0;         // 关闭自动调整（简单场景）
   }
