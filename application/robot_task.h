@@ -24,14 +24,14 @@ osThreadId robotTaskHandle;
 osThreadId motorTaskHandle;
 osThreadId daemonTaskHandle;
 osThreadId uiTaskHandle;
-osThreadId tof050cTaskHandle;
+// osThreadId tof050cTaskHandle;
 
 void StartINSTASK(void const *argument);
 void StartMOTORTASK(void const *argument);
 void StartDAEMONTASK(void const *argument);
 void StartROBOTTASK(void const *argument);
 void StartUITASK(void const *argument);
-void StartTOF050CTASK(void const *argument);
+// void StartTOF050CTASK(void const *argument);
 /**
  * @brief 初始化机器人任务,所有持续运行的任务都在这里初始化
  *
@@ -54,8 +54,8 @@ void OSTaskInit()
     osThreadDef(uitask, StartUITASK, osPriorityNormal, 0, 512);
     uiTaskHandle = osThreadCreate(osThread(uitask), NULL);
 
-    osThreadDef(tof050ctask, StartTOF050CTASK, osPriorityNormal, 0, 256);
-    tof050cTaskHandle = osThreadCreate(osThread(tof050ctask), NULL);
+    // osThreadDef(tof050ctask, StartTOF050CTASK, osPriorityNormal, 0, 256);
+    // tof050cTaskHandle = osThreadCreate(osThread(tof050ctask), NULL);
 
     HTMotorControlInit(); // 没有注册HT电机则不会执行
 }
@@ -152,18 +152,18 @@ __attribute__((noreturn)) void StartUITASK(void const *argument)
         osDelay(1); // 即使没有任何UI需要刷新,也挂起一次,防止卡在UITask中无法切换
     }
 }
-__attribute__((noreturn)) void StartTOF050CTASK(void const *argument)
-{
-    static float tof050c_dt;
-    static float tof050c_start;
-    LOGINFO("[freeRTOS] TOF050C Task Start");
-    for (;;)
-    {
-        tof050c_start = DWT_GetTimeline_ms();
-        TOF050CTask();
-        tof050c_dt = DWT_GetTimeline_ms() - tof050c_start;
-        if (tof050c_dt > 10)
-            LOGERROR("[freeRTOS] TOF050C Task is being DELAY! dt = [%f]", &tof050c_dt);
-        osDelay(10); // 100Hz
-    }
-}
+// __attribute__((noreturn)) void StartTOF050CTASK(void const *argument)
+// {
+//     static float tof050c_dt;
+//     static float tof050c_start;
+//     LOGINFO("[freeRTOS] TOF050C Task Start");
+//     for (;;)
+//     {
+//         tof050c_start = DWT_GetTimeline_ms();
+//         TOF050CTask();
+//         tof050c_dt = DWT_GetTimeline_ms() - tof050c_start;
+//         if (tof050c_dt > 10)
+//             LOGERROR("[freeRTOS] TOF050C Task is being DELAY! dt = [%f]", &tof050c_dt);
+//         osDelay(10); // 100Hz
+//     }
+// }

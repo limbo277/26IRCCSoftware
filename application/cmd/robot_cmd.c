@@ -141,6 +141,7 @@ void RobotCMDTask() {
   // 订阅底盘消息和灰度传感器消息
   SubGetMessage(Chassis_Feed_Sub, (void *)&Chassis_Fetch_Data);
   SubGetMessage(Graysensor_Feed_Sub, (void *)&Graysensor_Fetch_Data);
+  SubGetMessage(TOF050C_Feed_Sub, (void *)&TOF050C_Fetch_Data);
 
   /*Control Code Begin*/
   VisionSend_Data();
@@ -151,4 +152,5 @@ void RobotCMDTask() {
   // 发布底盘命令与灰度传感器命令
   PubPushMessage(Chassis_Cmd_Pub, (void *)&Chassis_Cmd_Send);
   PubPushMessage(Graysensor_Cmd_Pub, (void *)&Graysensor_Cmd_Send);
+  PubPushMessage(TOF050C_Cmd_Pub, (void *)&TOF050C_Cmd_Send);
 }

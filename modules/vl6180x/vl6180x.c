@@ -361,33 +361,33 @@ void multisensor_vl6180x()
 			VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
 			VL6180x_ChangeAddress(address);
 			VL6180X_Init(0x30 << 1, (0x30 << 1) | 0x01);
-			VL6180X_SetScaling(1,0x30 << 1, (0x30 << 1) | 0x01);
+			VL6180X_SetScaling(3,0x30 << 1, (0x30 << 1) | 0x01);
 
 		}
-		else if (address == 0x31)
-		{
-			 HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_SET);
-			VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-			VL6180x_ChangeAddress(address);
-			VL6180X_Init(0x31 << 1, (0x31 << 1) | 0x01);
-			VL6180X_SetScaling(1,0x31 << 1, (0x31 << 1) | 0x01);
-
-		}
-		else if(address == 0x32)
-		{
-			 HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
-			VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-			VL6180x_ChangeAddress(address);
-			VL6180X_Init(0x32 << 1, (0x32 << 1) | 0x01);
-			VL6180X_SetScaling(1,0x32 << 1, (0x32 << 1) | 0x01);
-
-		}
-		else if(address == 0x33){
-			HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
-		VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-			VL6180x_ChangeAddress(address);
-		VL6180X_Init(0x33 << 1, (0x33 << 1) | 0x01);
-		 VL6180X_SetScaling(3,0x33 << 1, (0x33 << 1) | 0x01);
-		}
+		// else if (address == 0x31)
+		// {
+		// 	 HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_SET);
+		// 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+		// 	VL6180x_ChangeAddress(address);
+		// 	VL6180X_Init(0x31 << 1, (0x31 << 1) | 0x01);
+		// 	VL6180X_SetScaling(1,0x31 << 1, (0x31 << 1) | 0x01);
+		//
+		// }
+		// else if(address == 0x32)
+		// {
+		// 	 HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
+		// 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+		// 	VL6180x_ChangeAddress(address);
+		// 	VL6180X_Init(0x32 << 1, (0x32 << 1) | 0x01);
+		// 	VL6180X_SetScaling(1,0x32 << 1, (0x32 << 1) | 0x01);
+		//
+		// }
+		// else if(address == 0x33){
+		// 	HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
+		// VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+		// 	VL6180x_ChangeAddress(address);
+		// VL6180X_Init(0x33 << 1, (0x33 << 1) | 0x01);
+		//  VL6180X_SetScaling(3,0x33 << 1, (0x33 << 1) | 0x01);
+		// }
 	}
 }

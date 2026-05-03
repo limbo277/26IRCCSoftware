@@ -35,6 +35,8 @@ void RobotInit()
 
     TOF050CInit();
 
+
+
     OSTaskInit(); // 创建基础任务
 
     // 初始化完成,开启中断
@@ -52,5 +54,7 @@ void RobotTask()
 #endif
 
     GraysensorTask(); // 灰度传感器任务
+
+  TOF050CTask();
 
 }

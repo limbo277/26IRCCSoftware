@@ -56,23 +56,17 @@ void TOF050CTask()
     SubGetMessage(TOF050C_Sub, &TOF050C_Cmd_Recv);
 
     // 读取8个传感器的测距数据，前4 TOF050C，后4 TOF200C
-    for (int i = 0; i < 8; i++)
-    {
-        if (i < 4)
-        {
-            // TOF050C (VL6180X)
-            uint8_t address = 0x30 + i;
-            uint8_t addr_write = address << 1;
-            uint8_t addr_read = (address << 1) | 0x01;
-            TOF050C_Feedback_Data.range_values[i] = VL6180X_ReadRangeSingleMillimeters(addr_write, addr_read);
-        }
-        else
-        {
-            // TOF200C (VL53L0)
-            uint8_t address = 0x30 +i;
-            TOF050C_Feedback_Data.range_values[i] = VL53L0X_readRangeSingleMillimeters(address);
-        }
-    }
+    // TOF050C (VL6180X) 传感器 0-3
+    TOF050C_Feedback_Data.range_values[0] = VL6180X_ReadRangeSingleMillimeters(0x60, 0x61); // 地址 0x30
+    // TOF050C_Feedback_Data.range_values[1] = VL6180X_ReadRangeSingleMillimeters(0x62, 0x63); // 地址 0x31
+    // TOF050C_Feedback_Data.range_values[2] = VL6180X_ReadRangeSingleMillimeters(0x64, 0x65); // 地址 0x32
+    // TOF050C_Feedback_Data.range_values[3] = VL6180X_ReadRangeSingleMillimeters(0x66, 0x67); // 地址 0x33
+    //
+    // // TOF200C (VL53L0) 传感器 4-7
+    TOF050C_Feedback_Data.range_values[4] = VL53L0X_readRangeSingleMillimeters(0x34); // 地址 0x34
+    // TOF050C_Feedback_Data.range_values[5] = VL53L0X_readRangeSingleMillimeters(0x35); // 地址 0x35
+    // TOF050C_Feedback_Data.range_values[6] = VL53L0X_readRangeSingleMillimeters(0x36); // 地址 0x36
+    // TOF050C_Feedback_Data.range_values[7] = VL53L0X_readRangeSingleMillimeters(0x37); // 地址 0x37
 
     // 设置数据有效性和在线状态
     TOF050C_Feedback_Data.data_valid = 1;   // 假设数据总是有效

@@ -3,17 +3,18 @@
 //
 #include "vl53l0.h"
 #include "stdio.h"
+#include "bsp_dwt.h"
 
 extern I2C_HandleTypeDef hi2c2;  // 假设使用 hi2c2，与 VL6180X 一致
 
-uint16_t timeout_start_ms = 0;
+uint32_t timeout_start_ms = 0;
 uint16_t io_timeout = 0;
 bool did_timeout = 0;
 
 // Record the current time to check an upcoming timeout against
-#define startTimeout() (timeout_start_ms = HAL_GetTick())
+#define startTimeout() (timeout_start_ms = (uint32_t)DWT_GetTimeline_ms())
 
-#define checkTimeoutExpired() (io_timeout > 0 && ((uint16_t)(HAL_GetTick() - timeout_start_ms) > io_timeout))
+#define checkTimeoutExpired() (io_timeout > 0 && ((uint32_t)DWT_GetTimeline_ms() - timeout_start_ms > io_timeout))
 
 // Decode VCSEL (vertical cavity surface emitting laser) pulse period in PCLKs
 // from register value
@@ -99,8 +100,14 @@ uint8_t ID_register;
 uint8_t stop_variable; // read by init and used when starting measurement; is StopVariable field of VL53L0X_DevData_t structure in API
 uint32_t measurement_timing_budget_us;
 
+// 多传感器场景：每个传感器独立的 stop_variable
+static uint8_t vl53l0_stop_vars[4];  // 对应地址 0x34, 0x35, 0x36, 0x37
+static uint8_t vl53l0_init_ok[4];    // 记录每个传感器是否初始化成功
+
 uint8_t VL53L0X_Init(uint8_t add, bool io_2v8)
 {
+    // VL53L0X_setTimeout(2000);  // 设置2秒超时，防止校准循环卡死
+
     // check model ID register (value specified in datasheet)
     ID_register = VL53L0X_ReadByte(add, IDENTIFICATION_MODEL_ID); // VL53L0X_DEFAULT_I2C_ADDR1->C0
     // printf("\nID_register=%d\n", ID_register);
@@ -575,10 +582,19 @@ uint8_t VL53L0X_getVcselPulsePeriod(uint8_t add, uint8_t type)
 // based on VL53L0X_StartMeasurement()
 void VL53L0X_startContinuous(uint8_t add, uint32_t period_ms)
 {
+    // 使用当前地址的 stop_variable 而不是全局变量
+    uint8_t stop_var = stop_variable;
+    if (add >= 0x34 && add <= 0x37) {
+        uint8_t idx = add - 0x34;
+        if (vl53l0_init_ok[idx]) {
+            stop_var = vl53l0_stop_vars[idx];
+        }
+    }
+
     VL53L0X_WriteByte(add, 0x80, 0x01);
     VL53L0X_WriteByte(add, 0xFF, 0x01);
     VL53L0X_WriteByte(add, 0x00, 0x00);
-    VL53L0X_WriteByte(add, 0x91, stop_variable);
+    VL53L0X_WriteByte(add, 0x91, stop_var);
     VL53L0X_WriteByte(add, 0x00, 0x01);
     VL53L0X_WriteByte(add, 0xFF, 0x00);
     VL53L0X_WriteByte(add, 0x80, 0x00);
@@ -617,7 +633,7 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
     startTimeout();
     // uint16_t loop_count = 0;
     // const uint16_t MAX_LOOPS = 1000;
-    uint16_t range;
+    uint16_t range ;
     while ((VL53L0X_ReadByte(add, RESULT_INTERRUPT_STATUS) & 0x07) == 0)
     {
         if (checkTimeoutExpired())
@@ -637,7 +653,7 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
     range = VL53L0X_ReadBytee_16Bit(add, RESULT_RANGE_STATUS + 10);
 
     VL53L0X_WriteByte(add, SYSTEM_INTERRUPT_CLEAR, 0x01);
-    HAL_Delay(1);
+    DWT_Delay(0.001f);
     return range;
 }
 
@@ -646,10 +662,19 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
 // based on VL53L0X_PerformSingleRangingMeasurement()
 uint16_t VL53L0X_readRangeSingleMillimeters(uint8_t add)
 {
+    // 根据地址查找对应传感器的 stop_variable
+    uint8_t stop_var = stop_variable;  // 默认使用全局值
+    if (add >= 0x34 && add <= 0x37) {
+        uint8_t idx = add - 0x34;
+        if (vl53l0_init_ok[idx]) {
+            stop_var = vl53l0_stop_vars[idx];
+        }
+    }
+
     VL53L0X_WriteByte(add, 0x80, 0x01);
     VL53L0X_WriteByte(add, 0xFF, 0x01);
     VL53L0X_WriteByte(add, 0x00, 0x00);
-    VL53L0X_WriteByte(add, 0x91, stop_variable);
+    VL53L0X_WriteByte(add, 0x91, stop_var);
     VL53L0X_WriteByte(add, 0x00, 0x01);
     VL53L0X_WriteByte(add, 0xFF, 0x00);
     VL53L0X_WriteByte(add, 0x80, 0x00);
@@ -674,7 +699,7 @@ uint16_t VL53L0X_readRangeSingleMillimeters(uint8_t add)
         //            return 65535;
         //        }
 
-        HAL_Delay(1);
+        DWT_Delay(0.001f);
     }
 
     return VL53L0X_readRangeContinuousMillimeters(add);
@@ -810,34 +835,58 @@ void Set_Address(uint8_t add, uint8_t new_addr)
 
 void multisensor_vl53l0_Init()
 {
+    // 初始化状态数组
+    for (int i = 0; i < 4; i++) {
+        vl53l0_init_ok[i] = 0;
+    }
+
+    // 全部复位
     HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_RESET);
 
+    // 传感器1 → 0x34
     HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
-    VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR,true);
-    Set_Address(VL53L0X_DEFAULT_I2C_ADDR,VL53L0X_DEFAULT_I2C_ADDR1);
-    HAL_Delay(100);
-
-    HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
-    VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR,true);
-    Set_Address(VL53L0X_DEFAULT_I2C_ADDR,VL53L0X_DEFAULT_I2C_ADDR2);
-    HAL_Delay(100);
-
-    HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
-    VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR,true);
-    Set_Address(VL53L0X_DEFAULT_I2C_ADDR,VL53L0X_DEFAULT_I2C_ADDR3);
-    HAL_Delay(100);
-
-    HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
-    VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR,true);
-    Set_Address(VL53L0X_DEFAULT_I2C_ADDR,VL53L0X_DEFAULT_I2C_ADDR4);
-    HAL_Delay(100);
-
-
+    DWT_Delay(0.1f);
+    if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
+        vl53l0_stop_vars[0] = stop_variable;
+        Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR1);
+        vl53l0_init_ok[0] = 1;
+        // VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR1, 0);
+    }
+    DWT_Delay(0.1f);
+    //
+    // // 传感器2 → 0x35
+    // HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_SET);
+    // DWT_Delay(0.1f);
+    // if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
+    //     vl53l0_stop_vars[1] = stop_variable;
+    //     Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR2);
+    //     vl53l0_init_ok[1] = 1;
+    //     VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR2, 0);
+    // }
+    // DWT_Delay(0.1f);
+    //
+    // // 传感器3 → 0x36
+    // HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_SET);
+    // DWT_Delay(0.1f);
+    // if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
+    //     vl53l0_stop_vars[2] = stop_variable;
+    //     Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR3);
+    //     vl53l0_init_ok[2] = 1;
+    //     VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR3, 0);
+    // }
+    // DWT_Delay(0.1f);
+    //
+    // // 传感器4 → 0x37
+    // HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_SET);
+    // DWT_Delay(0.1f);
+    // if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
+    //     vl53l0_stop_vars[3] = stop_variable;
+    //     Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR4);
+    //     vl53l0_init_ok[3] = 1;
+    //     VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR4, 0);
+    // }
+    // DWT_Delay(0.1f);
 }
