@@ -131,6 +131,12 @@ typedef struct
     float chassis_power_mx;
 } Chassis_Power_Data_s;
 
+typedef enum {
+  AGV_MODE_OFF = 0,
+  AGV_MODE_ONPLATFORM_FREESCAN,
+  AGV_MODE_ONPLATFORM_FOLLOW,
+
+}Chassis_AGV_Mode_e;
 /* ----------------CMD应用发布的控制数据,应当由gimbal/chassis/shoot订阅---------------- */
 /**
  * @brief 对于双板情况,遥控器和pc在云台,裁判系统在底盘
@@ -150,6 +156,7 @@ typedef struct
     float target_yaw_angle;
 
     chassis_mode_e chassis_mode;//底盘模式
+    Chassis_AGV_Mode_e agv_mode;//AGV模式
     int chassis_speed_buff;
     // UI部分
     //  ...
@@ -226,7 +233,7 @@ typedef struct
 typedef struct
 {
     uint16_t sensor_values[8];  // 8路灰度传感器值
-    float   sensor_Normalized[6]; // 8路灰度传感器归一化值,根据预设的黑白基准值进行线性归一化
+    float   sensor_Normalized[8]; // 8路灰度传感器归一化值,根据预设的黑白基准值进行线性归一化
     uint8_t data_valid;         // 数据有效标志
     uint8_t sensor_online;      // 传感器在线状态
 } Graysensor_Upload_Data_s;

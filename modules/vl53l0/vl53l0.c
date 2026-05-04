@@ -189,99 +189,99 @@ uint8_t VL53L0X_Init(uint8_t add, bool io_2v8)
     // -- VL53L0X_load_tuning_settings() begin
     // DefaultTuningSettings from vl53l0x_tuning.h
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x00, 0x00);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x00, 0x00);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x09, 0x00);
-    VL53L0X_WriteByte(add, 0x10, 0x00);
-    VL53L0X_WriteByte(add, 0x11, 0x00);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x09, 0x00);
+  VL53L0X_WriteByte(add,0x10, 0x00);
+  VL53L0X_WriteByte(add,0x11, 0x00);
 
-    VL53L0X_WriteByte(add, 0x24, 0x01);
-    VL53L0X_WriteByte(add, 0x25, 0xFF);
-    VL53L0X_WriteByte(add, 0x75, 0x00);
+  VL53L0X_WriteByte(add,0x24, 0x01);
+  VL53L0X_WriteByte(add,0x25, 0xFF);
+  VL53L0X_WriteByte(add,0x75, 0x00);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x4E, 0x2C);
-    VL53L0X_WriteByte(add, 0x48, 0x00);
-    VL53L0X_WriteByte(add, 0x30, 0x20);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x4E, 0x2C);
+  VL53L0X_WriteByte(add,0x48, 0x00);
+  VL53L0X_WriteByte(add,0x30, 0x20);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x30, 0x09);
-    VL53L0X_WriteByte(add, 0x54, 0x00);
-    VL53L0X_WriteByte(add, 0x31, 0x04);
-    VL53L0X_WriteByte(add, 0x32, 0x03);
-    VL53L0X_WriteByte(add, 0x40, 0x83);
-    VL53L0X_WriteByte(add, 0x46, 0x25);
-    VL53L0X_WriteByte(add, 0x60, 0x00);
-    VL53L0X_WriteByte(add, 0x27, 0x00);
-    VL53L0X_WriteByte(add, 0x50, 0x06);
-    VL53L0X_WriteByte(add, 0x51, 0x00);
-    VL53L0X_WriteByte(add, 0x52, 0x96);
-    VL53L0X_WriteByte(add, 0x56, 0x08);
-    VL53L0X_WriteByte(add, 0x57, 0x30);
-    VL53L0X_WriteByte(add, 0x61, 0x00);
-    VL53L0X_WriteByte(add, 0x62, 0x00);
-    VL53L0X_WriteByte(add, 0x64, 0x00);
-    VL53L0X_WriteByte(add, 0x65, 0x00);
-    VL53L0X_WriteByte(add, 0x66, 0xA0);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x30, 0x09);
+  VL53L0X_WriteByte(add,0x54, 0x00);
+  VL53L0X_WriteByte(add,0x31, 0x04);
+  VL53L0X_WriteByte(add,0x32, 0x03);
+  VL53L0X_WriteByte(add,0x40, 0x83);
+  VL53L0X_WriteByte(add,0x46, 0x25);
+  VL53L0X_WriteByte(add,0x60, 0x00);
+  VL53L0X_WriteByte(add,0x27, 0x00);
+  VL53L0X_WriteByte(add,0x50, 0x06);
+  VL53L0X_WriteByte(add,0x51, 0x00);
+  VL53L0X_WriteByte(add,0x52, 0x96);
+  VL53L0X_WriteByte(add,0x56, 0x08);
+  VL53L0X_WriteByte(add,0x57, 0x30);
+  VL53L0X_WriteByte(add,0x61, 0x00);
+  VL53L0X_WriteByte(add,0x62, 0x00);
+  VL53L0X_WriteByte(add,0x64, 0x00);
+  VL53L0X_WriteByte(add,0x65, 0x00);
+  VL53L0X_WriteByte(add,0x66, 0xA0);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x22, 0x32);
-    VL53L0X_WriteByte(add, 0x47, 0x14);
-    VL53L0X_WriteByte(add, 0x49, 0xFF);
-    VL53L0X_WriteByte(add, 0x4A, 0x00);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x22, 0x32);
+  VL53L0X_WriteByte(add,0x47, 0x14);
+  VL53L0X_WriteByte(add,0x49, 0xFF);
+  VL53L0X_WriteByte(add,0x4A, 0x00);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x7A, 0x0A);
-    VL53L0X_WriteByte(add, 0x7B, 0x00);
-    VL53L0X_WriteByte(add, 0x78, 0x21);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x7A, 0x0A);
+  VL53L0X_WriteByte(add,0x7B, 0x00);
+  VL53L0X_WriteByte(add,0x78, 0x21);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x23, 0x34);
-    VL53L0X_WriteByte(add, 0x42, 0x00);
-    VL53L0X_WriteByte(add, 0x44, 0xFF);
-    VL53L0X_WriteByte(add, 0x45, 0x26);
-    VL53L0X_WriteByte(add, 0x46, 0x05);
-    VL53L0X_WriteByte(add, 0x40, 0x40);
-    VL53L0X_WriteByte(add, 0x0E, 0x06);
-    VL53L0X_WriteByte(add, 0x20, 0x1A);
-    VL53L0X_WriteByte(add, 0x43, 0x40);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x23, 0x34);
+  VL53L0X_WriteByte(add,0x42, 0x00);
+  VL53L0X_WriteByte(add,0x44, 0xFF);
+  VL53L0X_WriteByte(add,0x45, 0x26);
+  VL53L0X_WriteByte(add,0x46, 0x05);
+  VL53L0X_WriteByte(add,0x40, 0x40);
+  VL53L0X_WriteByte(add,0x0E, 0x06);
+  VL53L0X_WriteByte(add,0x20, 0x1A);
+  VL53L0X_WriteByte(add,0x43, 0x40);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x34, 0x03);
-    VL53L0X_WriteByte(add, 0x35, 0x44);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x34, 0x03);
+  VL53L0X_WriteByte(add,0x35, 0x44);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x31, 0x04);
-    VL53L0X_WriteByte(add, 0x4B, 0x09);
-    VL53L0X_WriteByte(add, 0x4C, 0x05);
-    VL53L0X_WriteByte(add, 0x4D, 0x04);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x31, 0x04);
+  VL53L0X_WriteByte(add,0x4B, 0x09);
+  VL53L0X_WriteByte(add,0x4C, 0x05);
+  VL53L0X_WriteByte(add,0x4D, 0x04);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x44, 0x00);
-    VL53L0X_WriteByte(add, 0x45, 0x20);
-    VL53L0X_WriteByte(add, 0x47, 0x08);
-    VL53L0X_WriteByte(add, 0x48, 0x28);
-    VL53L0X_WriteByte(add, 0x67, 0x00);
-    VL53L0X_WriteByte(add, 0x70, 0x04);
-    VL53L0X_WriteByte(add, 0x71, 0x01);
-    VL53L0X_WriteByte(add, 0x72, 0xFE);
-    VL53L0X_WriteByte(add, 0x76, 0x00);
-    VL53L0X_WriteByte(add, 0x77, 0x00);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x44, 0x00);
+  VL53L0X_WriteByte(add,0x45, 0x20);
+  VL53L0X_WriteByte(add,0x47, 0x08);
+  VL53L0X_WriteByte(add,0x48, 0x28);
+  VL53L0X_WriteByte(add,0x67, 0x00);
+  VL53L0X_WriteByte(add,0x70, 0x04);
+  VL53L0X_WriteByte(add,0x71, 0x01);
+  VL53L0X_WriteByte(add,0x72, 0xFE);
+  VL53L0X_WriteByte(add,0x76, 0x00);
+  VL53L0X_WriteByte(add,0x77, 0x00);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x0D, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x0D, 0x01);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x80, 0x01);
-    VL53L0X_WriteByte(add, 0x01, 0xF8);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x01);
+  VL53L0X_WriteByte(add,0x01, 0xF8);
 
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x8E, 0x01);
-    VL53L0X_WriteByte(add, 0x00, 0x01);
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x80, 0x00);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x8E, 0x01);
+  VL53L0X_WriteByte(add,0x00, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x00);
 
     // -- VL53L0X_load_tuning_settings() end
 
@@ -315,41 +315,25 @@ uint8_t VL53L0X_Init(uint8_t add, bool io_2v8)
     // VL53L0X_PerformRefCalibration() begin (VL53L0X_perform_ref_calibration())
 
     // -- VL53L0X_perform_vhv_calibration() begin
-    // SYSRANGE_START->0x00
-    VL53L0X_WriteByte(add, SYSRANGE_START, 0x01 | 0x40); // VL53L0X_REG_SYSRANGE_MODE_START_STOP
+  //SYSTEM_SEQUENCE_CONFIG->0x01
+  VL53L0X_WriteByte(add,SYSTEM_SEQUENCE_CONFIG, 0x01);
+  if (!VL53L0X_performSingleRefCalibration(add,0x40)) { return false; }
 
-    startTimeout();
-    // RESULT_INTERRUPT_STATUS->0x13
-    while ((VL53L0X_ReadByte(add, RESULT_INTERRUPT_STATUS) & 0x07) == 0)
-    {
-        if (checkTimeoutExpired())
-        {
-            return false;
-        }
-    }
-    // SYSTEM_INTERRUPT_CLEAR->0x0B
-    VL53L0X_WriteByte(add, SYSTEM_INTERRUPT_CLEAR, 0x01);
-    // SYSRANGE_START->0x00
-    VL53L0X_WriteByte(add, SYSRANGE_START, 0x00);
+  // -- VL53L0X_perform_vhv_calibration() end
 
-    // -- VL53L0X_perform_vhv_calibration() end
+  // -- VL53L0X_perform_phase_calibration() begin
 
-    // -- VL53L0X_perform_phase_calibration() begin
+  VL53L0X_WriteByte(add,SYSTEM_SEQUENCE_CONFIG, 0x02);
+  if (!VL53L0X_performSingleRefCalibration(add,0x00)) { return false; }
 
-    VL53L0X_WriteByte(add, SYSTEM_SEQUENCE_CONFIG, 0x02);
-    if (!VL53L0X_performSingleRefCalibration(add, 0x00))
-    {
-        return false;
-    }
+  // -- VL53L0X_perform_phase_calibration() end
 
-    // -- VL53L0X_perform_phase_calibration() end
+  // "restore the previous Sequence Config"
+  VL53L0X_WriteByte(add,SYSTEM_SEQUENCE_CONFIG, 0xE8);
 
-    // "restore the previous Sequence Config"
-    VL53L0X_WriteByte(add, SYSTEM_SEQUENCE_CONFIG, 0xE8);
+  // VL53L0X_PerformRefCalibration() end
 
-    // VL53L0X_PerformRefCalibration() end
-
-    return true;
+  return true;
 }
 
 // Set the return signal rate limit check value in units of MCPS (mega counts
@@ -582,22 +566,22 @@ uint8_t VL53L0X_getVcselPulsePeriod(uint8_t add, uint8_t type)
 // based on VL53L0X_StartMeasurement()
 void VL53L0X_startContinuous(uint8_t add, uint32_t period_ms)
 {
-    // 使用当前地址的 stop_variable 而不是全局变量
-    uint8_t stop_var = stop_variable;
-    if (add >= 0x34 && add <= 0x37) {
-        uint8_t idx = add - 0x34;
-        if (vl53l0_init_ok[idx]) {
-            stop_var = vl53l0_stop_vars[idx];
-        }
-    }
+    // // 使用当前地址的 stop_variable 而不是全局变量
+    // uint8_t stop_var = stop_variable;
+    // if (add >= 0x34 && add <= 0x37) {
+    //     uint8_t idx = add - 0x34;
+    //     if (vl53l0_init_ok[idx]) {
+    //         stop_var = vl53l0_stop_vars[idx];
+    //     }
+    // }
 
-    VL53L0X_WriteByte(add, 0x80, 0x01);
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x00, 0x00);
-    VL53L0X_WriteByte(add, 0x91, stop_var);
-    VL53L0X_WriteByte(add, 0x00, 0x01);
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x80, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x00, 0x00);
+  VL53L0X_WriteByte(add,0x91, stop_variable);
+  VL53L0X_WriteByte(add,0x00, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x00);
 
     if (period_ms != 0)
     {
@@ -662,22 +646,22 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
 // based on VL53L0X_PerformSingleRangingMeasurement()
 uint16_t VL53L0X_readRangeSingleMillimeters(uint8_t add)
 {
-    // 根据地址查找对应传感器的 stop_variable
-    uint8_t stop_var = stop_variable;  // 默认使用全局值
-    if (add >= 0x34 && add <= 0x37) {
-        uint8_t idx = add - 0x34;
-        if (vl53l0_init_ok[idx]) {
-            stop_var = vl53l0_stop_vars[idx];
-        }
-    }
+    // // 根据地址查找对应传感器的 stop_variable
+    // uint8_t stop_var = stop_variable;  // 默认使用全局值
+    // if (add >= 0x34 && add <= 0x37) {
+    //     uint8_t idx = add - 0x34;
+    //     if (vl53l0_init_ok[idx]) {
+    //         stop_var = vl53l0_stop_vars[idx];
+    //     }
+    // }
 
-    VL53L0X_WriteByte(add, 0x80, 0x01);
-    VL53L0X_WriteByte(add, 0xFF, 0x01);
-    VL53L0X_WriteByte(add, 0x00, 0x00);
-    VL53L0X_WriteByte(add, 0x91, stop_var);
-    VL53L0X_WriteByte(add, 0x00, 0x01);
-    VL53L0X_WriteByte(add, 0xFF, 0x00);
-    VL53L0X_WriteByte(add, 0x80, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x01);
+  VL53L0X_WriteByte(add,0x00, 0x00);
+  VL53L0X_WriteByte(add,0x91, stop_variable);
+  VL53L0X_WriteByte(add,0x00, 0x01);
+  VL53L0X_WriteByte(add,0xFF, 0x00);
+  VL53L0X_WriteByte(add,0x80, 0x00);
 
     VL53L0X_WriteByte(add, SYSRANGE_START, 0x01);
 

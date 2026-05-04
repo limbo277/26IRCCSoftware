@@ -21,7 +21,7 @@ static GrayscaleData_t grayscale_data_KF = {
 
 static KalmanFilter_t Gray_KF[8]; // 灰度传感器数据的卡尔曼滤波器实例
 
-static GrayCalib_t GrayCalib[6]; // 灰度传感器的校准数据,最多支持6套校准数据
+static GrayCalib_t GrayCalib[8]; // 灰度传感器的校准数据,最多支持6套校准数据
 
 void Graysensor_Kalman_Init() {
   for (int i = 0; i < 8; i++) {
@@ -51,27 +51,35 @@ void Graysensor_Kalman_Filter() {
  * 预设6套校准数据,分别对应X0与X2-X6一共六个通道的数据
  */
 void GrayCalibInit() {
-  // 预设6套校准数据,分别对应X0与X2-X6一共六个通道的数据
+  //X1与X7通道损坏暂未使用
   // X0通道数据
   GrayCalib[0].black_base = 3635; // 灰度0
   GrayCalib[0].white_base = 2490;
+  //X1通道数据（暂时未使用）
+  GrayCalib[1].black_base = 4096; // 灰度1
+  GrayCalib[1].white_base = 4096;
   // X2通道数据
-  GrayCalib[1].black_base = 3746; // 灰度2
-  GrayCalib[1].white_base = 1963;
+  GrayCalib[2].black_base = 3746; // 灰度2
+  GrayCalib[2].white_base = 1963;
   // X3通道数据
-  GrayCalib[2].black_base = 3765; // 灰度2
-  GrayCalib[2].white_base = 2015;
+  GrayCalib[3].black_base = 3765; // 灰度3
+  GrayCalib[3].white_base = 2015;
   // X4通道数据
-  GrayCalib[3].black_base = 3748; // 灰度3
-  GrayCalib[3].white_base = 1946;
+  GrayCalib[4].black_base = 3748; // 灰度4
+  GrayCalib[4].white_base = 1946;
 
   // X5通道数据
-  GrayCalib[4].black_base = 3769; // 灰度4
-  GrayCalib[4].white_base = 2104;
+  GrayCalib[5].black_base = 3769; // 灰度5
+  GrayCalib[5].white_base = 2104;
 
   // X6通道数据
-  GrayCalib[5].black_base = 3795; // 灰度5
-  GrayCalib[5].white_base = 2333;
+  GrayCalib[6].black_base = 3795; // 灰度6
+  GrayCalib[6].white_base = 2333;
+
+  //X7通道数据（暂时未使用）
+  GrayCalib[7].black_base = 4096; // 灰度7
+  GrayCalib[7].white_base = 4096;
+
 }
 
 /*
@@ -79,7 +87,9 @@ void GrayCalibInit() {
  * 根据预设的黑白基准值将原始传感器值归一化
  * */
 void Gray_Normalize() {
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 8; i++) {
+
+    if (GrayCalib[i].white_base==GrayCalib[i].black_base) continue;
 
     Graysensor_Feedback_Data.sensor_Normalized[i] =
         (float)(Graysensor_Feedback_Data.sensor_values[i]- GrayCalib[i].white_base)/(float)
@@ -131,9 +141,8 @@ void GraysensorTask() {
   if (grayscale_data && grayscale_data->new_package_flag) {
     Graysensor_Kalman_Filter();
     // 填充反馈数据
-    for (int i = 0; i < 6; i++) {
-      Graysensor_Feedback_Data.sensor_values[i] =
-          grayscale_data_KF.sensor_values[i];
+    for (int i = 0; i < 8; i++) {
+      Graysensor_Feedback_Data.sensor_values[i] = grayscale_data_KF.sensor_values[i];
     }
     Gray_Normalize();
 

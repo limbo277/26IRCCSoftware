@@ -2,6 +2,7 @@
 #include "robot_cmd.h"
 #include "robot_def.h"
 // module
+#include "TOF_Sensors.h"
 #include "bmi088.h"
 #include "dji_motor.h"
 #include "general_def.h"
@@ -9,7 +10,6 @@
 #include "master_process.h"
 #include "message_center.h"
 #include "remote_control.h"
-#include "TOF_Sensors.h"
 // bsp
 #include "bsp_dwt.h"
 #include "bsp_log.h"
@@ -36,10 +36,10 @@ static Graysensor_Ctrl_Cmd_s Graysensor_Cmd_Send; // 发送给灰度传感器的
 static Graysensor_Upload_Data_s Graysensor_Fetch_Data; // 从灰度传感器接收的反馈信息
 
 // TOF050C消息中心
-static Publisher_t *TOF050C_Cmd_Pub;    // TOF050C控制消息发布者
+static Publisher_t *TOF050C_Cmd_Pub;   // TOF050C控制消息发布者
 static Subscriber_t *TOF050C_Feed_Sub; // TOF050C反馈信息订阅者
 
-static TOF050C_Ctrl_Cmd_s TOF050C_Cmd_Send;     // 发送给TOF050C的控制信息
+static TOF050C_Ctrl_Cmd_s TOF050C_Cmd_Send;      // 发送给TOF050C的控制信息
 static TOF050C_Upload_Data_s TOF050C_Fetch_Data; // 从TOF050C接收的反馈信息
 
 static RC_ctrl_t *rc_data;              // 遥控器数据,初始化时返回
@@ -49,13 +49,13 @@ static Robot_Status_e Robot_State; // 机器人整体工作状态
 
 static attitude_t *IMU_data;
 
-static float Target_Yaw_Angele = 0, Target_Yaw_Angular_Velocity = 0,
-             Yaw_Offset = 0;
+static float Target_Yaw_Angele = 0;
 
 void RobotCMDInit() {
 
   IMU_data = INS_Init(); // 获取陀螺仪数据指针
-  rc_data = RemoteControlInit(&huart5); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
+  rc_data = RemoteControlInit(
+      &huart5); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
   vision_recv_data = VisionInit(&huart9); // 视觉通信串口
 
   Target_Yaw_Angele = IMU_data->Yaw;
@@ -77,9 +77,12 @@ void RobotCMDInit() {
   // 注册TOF050C消息
   TOF050C_Cmd_Pub = PubRegister("TOF050C_Cmd", sizeof(TOF050C_Ctrl_Cmd_s));
   TOF050C_Feed_Sub = SubRegister("TOF050C_Feed", sizeof(TOF050C_Upload_Data_s));
-  
 
   Robot_State = ROBOT_READY;
+}
+
+static float GrayValueAGV() {
+  // Graysensor_Fetch_Data.sensor_Normalized[]
 }
 
 /**
@@ -87,27 +90,61 @@ void RobotCMDInit() {
  */
 static void RemoteControlSet(void) {
   if (switch_is_down(rc_data[TEMP].rc.switch_left)) {
+    //安全模式，此状态所有电机失能
     Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
     Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
   } else if (switch_is_mid(rc_data[TEMP].rc.switch_left)) {
+    //正常手控模式，此状态所有电机正常工作
     Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
+    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
+      // 差速底盘只有角速度和Vx
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
+      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    } else {
+      Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+      Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    }
   } else if (switch_is_up(rc_data[TEMP].rc.switch_left)) {
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
+      //AGV模式，两个半自动模式加一个全自动模式
+       Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
+    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
+      //测试模式，此模式测试视觉系统是否正常工作
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+      Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+    } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
+      // Chassis_Cmd_Send.vx = ;
+      // Chassis_Cmd_Send.wz = ;
+      // Chassis_Cmd_Send.target_yaw_angle = ;
+    } else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
+      // Chassis_Cmd_Send.vx = ;
+      // Chassis_Cmd_Send.wz = ;
+      // Chassis_Cmd_Send.target_yaw_angle = ;
+    } else
+      Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
   } else {
     Chassis_Cmd_Send.chassis_mode =
         CHASSIS_ZERO_FORCE; // 避免未定义的拨杆状态出现造成控制混乱
   }
 
-  if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
-    // 差速底盘只有角速度和Vx
-    Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
-    Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-  } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
-    Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
-    Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-  } else {
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
-  }
+  // if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
+  //   // 差速底盘只有角速度和Vx
+  //   Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+  //   Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+  // } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
+  //   Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
+  //   Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+  // }
+  // else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
+  //   Chassis_Cmd_Send.vx = ;
+  //   Chassis_Cmd_Send.wz = ;
+  //   Chassis_Cmd_Send.target_yaw_angle = ;
+  // }
+  // else {
+  //   Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+  // }
 
   // 同步底盘目标角度在控制命令不为0时的目标角度与IMU角度一致
   if (Chassis_Cmd_Send.wz != 0) {
@@ -128,12 +165,8 @@ static void RemoteControlSet(void) {
 
   Chassis_Cmd_Send.yaw_angle_speed = IMU_data->Gyro[2];
 }
-static void VisionSend_Data(void) {
-        VisionSetAltitude(IMU_data->Yaw);
-}
-static void GrayJudge(void) {
-
-}
+static void VisionSend_Data(void) { VisionSetAltitude(IMU_data->Yaw); }
+static void GrayJudge(void) {}
 
 /* 机器人核心控制任务,200Hz频率运行(必须高于视觉发送频率) */
 void RobotCMDTask() {
