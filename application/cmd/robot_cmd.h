@@ -13,6 +13,9 @@
 #define YAW_DEVIATION_THRESHOLD  30.0f  // Yaw 偏航阈值单位为度
 #define PITCH_LEVEL_THRESHOLD    1.0f   // Pitch 水平判定阈值单位为度
 #define MAX_RETRY_COUNT          3      // 最大重试次数
+#define UPLOAD_PLATFORM_LOWER_THRESHOLD 0.5f   // 爬台过程中灰度值的低阈值，单位为0-1
+
+#define AGV_FALL_DOWN_PLATFORM_ACCEL_Z -24.0f
 
 /*AGV模式对边距离常量*/
 #define AGV_LASER_DISTANCE_FL 200

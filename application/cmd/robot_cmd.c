@@ -165,14 +165,14 @@ static void UPdonePlatform(void) {
     static uint8_t retry_cnt = 0;
 
     // 读取来自上位机的距离扫描值（后档方向）
-  float BackToPlatformDistance = 0;
+  float BackToPlatformDistance = 9999.0f; // 修复：必须给一个超大默认值，绝不能是0，否则上位机离线时会自动瞬间通过所有的测距判定触发疯冲！
   if (vision_recv_data->NeedValue!=0) {
     BackToPlatformDistance=vision_recv_data->NeedValue;
   }
 
 
     // 灰度全部低于阈值
-    bool all_gray_below = true;//
+    bool all_gray_below = true;
     for (int i = 0; i < 8; i++) {
         if (Graysensor_Fetch_Data.sensor_Normalized[i] > 0.3f) {
             all_gray_below = false;
@@ -215,15 +215,13 @@ static void UPdonePlatform(void) {
             stage_start_ms = now_ms;
             break;
         }
-        // Yaw 偏航检测
-        if (yaw_change > YAW_DEVIATION_THRESHOLD) {
-            climb_stage = STAGE_RETRY;
-            stage_start_ms = now_ms;
-            break;
-        }
         // 继续冲台
         Chassis_Cmd_Send.vx = AGV_START_SPEED;
-        Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+        Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+        if (BackToPlatformDistance<=UPLOAD_PLATFORM_LOWER_THRESHOLD) {
+          climb_stage = STAGE_SLOW_CLIMB;
+          stage_start_ms = now_ms;
+        }
         break;
 
     case STAGE_SLOW_CLIMB:
@@ -233,12 +231,7 @@ static void UPdonePlatform(void) {
             stage_start_ms = now_ms;
             break;
         }
-        // Yaw 偏航检测
-        if (yaw_change > YAW_DEVIATION_THRESHOLD) {
-            climb_stage = STAGE_RETRY;
-            stage_start_ms = now_ms;
-            break;
-        }
+
         // 灰度连续达标 → 上台成功
         if (all_gray_below) {
             if (gray_ok_ms == 0) {
@@ -283,13 +276,24 @@ static void UPdonePlatform(void) {
         break;
     }
 }
+/*
+ *  @brief 检测是否掉台
+ *  @return true 掉台  false 没掉台
+ */
 static bool UnderPlatformDetect(void) {
 
-  bool edge_detected = false;
-  // if (){}
+  bool UnderPlatformFlag = false;
+  for (int i = 0; i < 8; i++) {
+    if (Graysensor_Fetch_Data.sensor_Normalized[i] > 0.8f) {
+      UnderPlatformFlag = true;
+      break;
+    }
+  }
+  return UnderPlatformFlag;
 }
+
 /**
- * @brief ModeJudge — 优先级调度器（流程图右侧）
+ * @brief ModeJudge — 优先级调度器
  *        根据传感器条件选出最高优先级就绪模式
  */
 static void ModeJudge(void) {
@@ -308,10 +312,19 @@ static void ModeJudge(void) {
   /* ===== 正常决策：从高到低检查各模式条件 ===== */
   AGV_Mode_e best_mode = AGV_Mode_ZERO_FORCE;
   uint8_t best_priority = 0;
-  //优先级P10：掉台检测后台运行一旦检测到立即介入启动返回平台
-  if (UnderPlatformDetect()) {
 
+  static uint32_t fall_recover_timer = 0;
+  if (UnderPlatformDetect()) {
+    fall_recover_timer = DWT_GetTimeline_ms(); // 修复：检测到掉台边缘，锁存当前触发时间
   }
+
+  //P10：掉台检测后台运行一旦检测到立即介入启动返回平台，且维持硬退500ms避免在边缘抽搐震荡打滑
+  if (DWT_GetTimeline_ms() - fall_recover_timer < 500) {
+    best_mode = AGV_Mode_RETURNPLATFORM;
+    best_priority = 10;
+    goto done;
+  }
+
   // P10：掉台检测（最高优先级）
   // if (/* 掉台条件，如 TOF 对地距离突变 */) {
   //     best_mode = AGV_Mode_RETURNPLATFORM;
@@ -327,18 +340,18 @@ static void ModeJudge(void) {
   // }
 
   // P8：检测到能量块
-  // if (/* 能量块条件 */) {
-  //     best_mode = AGV_Mode_FLLOW;
-  //     best_priority = 8;
-  //     goto done;
-  // }
-
-  // P7：检测到对方机器人
-  if (vision_recv_data->target_yaw != 0) {
-      best_mode = AGV_Mode_ATTACK;
-      best_priority = 7;
+  if (vision_recv_data->tracing_id!=-1) {
+      best_mode = AGV_Mode_FLLOW;
+      best_priority = 8;
       goto done;
   }
+
+  // P7：检测到对方机器人
+  // if (vision_recv_data->target_yaw != 0) {
+  //     best_mode = AGV_Mode_ATTACK;
+  //     best_priority = 7;
+  //     goto done;
+  // }
 
   // 默认：自动巡台
   best_mode = AGV_Mode_SCANPLATFORM;
@@ -374,6 +387,18 @@ static void AutoPatrolTask(void) {
     Chassis_Cmd_Send.vx = (speed < 0.05f) ? 0.05f : speed;
 /*End 灰度计算速度*/
 
+    static bool is_turning = false;
+    static float turn_target_yaw = 0;
+
+    // 修复：检测转向动作是否完成
+    if (is_turning) {
+        float err = fabsf(turn_target_yaw - IMU_data->Yaw);
+        if (err > 180.0f) err = 360.0f - err;
+        if (err < 10.0f) {
+            is_turning = false; // 误差进入10度以内，转向宣告完成，去锁
+        }
+    }
+
     /*Begin 灰度+Yaw 判断当前位置*/
     bool on_diagonal_edge = false;
     // if (/* 灰度+Yaw判定在对角边 */) { on_diagonal_edge = true; }
@@ -382,13 +407,15 @@ static void AutoPatrolTask(void) {
         bool yaw_point_outward = false;
         // if (/* 判断当前Yaw是否向外 */) { yaw_point_outward = true; }
 
-        if (!yaw_point_outward) {
+        if (!yaw_point_outward && !is_turning) {
+            // 修复：锁存状态！只计算��次目标，防止 200hz 频率循环无限累加 Yaw 引起无故疯转陀螺
+            is_turning = true;
             if (on_diagonal_edge) {
                 // 对角边 → 转120°
-                Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw + 120.0f;
+                turn_target_yaw = IMU_data->Yaw + 120.0f;
             } else {
                 // 直边 → 转90°
-                Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw + 90.0f;
+                turn_target_yaw = IMU_data->Yaw + 90.0f;
             }
         }
         // 如果Yaw已经向外，不转方向继续走
@@ -402,7 +429,12 @@ static void AutoPatrolTask(void) {
     // }
     // last_avg_gray = avg_gray;
 
-    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    // 修复：只有平时保持直行才覆盖为 Yaw，如果有正在转向的动作则维持执行
+    if (is_turning) {
+        Chassis_Cmd_Send.target_yaw_angle = turn_target_yaw;
+    } else {
+        Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    }
     YawAngleOFFSET();
 }
 
