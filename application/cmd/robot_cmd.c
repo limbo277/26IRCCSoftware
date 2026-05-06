@@ -15,18 +15,14 @@
 #include "bsp_log.h"
 #include "bsp_usb.h"
 // 私有宏,自动将编码器转换成角度值
-#define YAW_ALIGN_ANGLE                                                        \
-  (YAW_CHASSIS_ALIGN_ECD * ECD_ANGLE_COEF_DJI) // 对齐时的角度,0-360
-#define PTICH_HORIZON_ANGLE                                                    \
-  (PITCH_HORIZON_ECD * ECD_ANGLE_COEF_DJI) // pitch水平时电机的角度,0-360
+#define YAW_ALIGN_ANGLE (YAW_CHASSIS_ALIGN_ECD * ECD_ANGLE_COEF_DJI) // 对齐时的角度,0-360
+#define PTICH_HORIZON_ANGLE (PITCH_HORIZON_ECD * ECD_ANGLE_COEF_DJI) // pitch水平时电机的角度,0-360
 /*消息中心*/
 static Publisher_t *Chassis_Cmd_Pub;   // 底盘控制消息发布者
 static Subscriber_t *Chassis_Feed_Sub; // 底盘反馈信息订阅者
 
-static Chassis_Ctrl_Cmd_s
-    Chassis_Cmd_Send; // 发送给底盘应用的信息，包括控制信息
-static Chassis_Upload_Data_s
-    Chassis_Fetch_Data; // 从底盘应用接收的反馈信息与底盘的运动状态
+static Chassis_Ctrl_Cmd_s Chassis_Cmd_Send; // 发送给底盘应用的信息，包括控制信息
+static Chassis_Upload_Data_s Chassis_Fetch_Data; // 从底盘应用接收的反馈信息与底盘的运动状态
 
 // 灰度传感器消息中心
 static Publisher_t *Graysensor_Cmd_Pub;   // 灰度传感器控制消息发布者
@@ -51,6 +47,8 @@ static attitude_t *IMU_data;
 
 static float Target_Yaw_Angele = 0;
 
+static AGV_Mode_t AGV_MODE_GLOBAL; // AGV模式全局变量(默认启动模式)
+
 void RobotCMDInit() {
 
   IMU_data = INS_Init(); // 获取陀螺仪数据指针
@@ -64,10 +62,8 @@ void RobotCMDInit() {
   Chassis_Feed_Sub = SubRegister("Chassis_Feed", sizeof(Chassis_Upload_Data_s));
 
   // 注册灰度传感器消息
-  Graysensor_Cmd_Pub =
-      PubRegister("Graysensor_Cmd", sizeof(Graysensor_Ctrl_Cmd_s));
-  Graysensor_Feed_Sub =
-      SubRegister("Graysensor_Feed", sizeof(Graysensor_Upload_Data_s));
+  Graysensor_Cmd_Pub = PubRegister("Graysensor_Cmd", sizeof(Graysensor_Ctrl_Cmd_s));
+  Graysensor_Feed_Sub = SubRegister("Graysensor_Feed", sizeof(Graysensor_Upload_Data_s));
 
   // 初始化灰度传感器控制命令 (默认模拟模式)
   Graysensor_Cmd_Send.calib_mode = 0;   // 不校准
@@ -77,84 +73,16 @@ void RobotCMDInit() {
   // 注册TOF050C消息
   TOF050C_Cmd_Pub = PubRegister("TOF050C_Cmd", sizeof(TOF050C_Ctrl_Cmd_s));
   TOF050C_Feed_Sub = SubRegister("TOF050C_Feed", sizeof(TOF050C_Upload_Data_s));
+  // 首次启动后的AGV模式设置为启动模式
+  AGV_MODE_GLOBAL.Mode = AGV_Mode_ZERO_FORCE;
+  AGV_MODE_GLOBAL.Priority = 0;
+  AGV_MODE_GLOBAL.StartFlag = false;
 
   Robot_State = ROBOT_READY;
 }
 
-static float GrayValueAGV() {
-  // Graysensor_Fetch_Data.sensor_Normalized[]
-}
 
-/**
- * @brief 控制输入为遥控器(调试时)的模式和控制量设置
- */
-static void RemoteControlSet(void) {
-  if (switch_is_down(rc_data[TEMP].rc.switch_left)) {
-    //安全模式，此状态所有电机失能
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
-    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
-  } else if (switch_is_mid(rc_data[TEMP].rc.switch_left)) {
-    //正常手控模式，此状态所有电机正常工作
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
-    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
-      // 差速底盘只有角速度和Vx
-      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
-      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-    } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
-      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
-      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-    } else {
-      Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
-      Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
-    }
-  } else if (switch_is_up(rc_data[TEMP].rc.switch_left)) {
-      //AGV模式，两个半自动模式加一个全自动模式
-       Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
-    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
-      //测试模式，此模式测试视觉系统是否正常工作
-      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
-      Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
-    } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
-      // Chassis_Cmd_Send.vx = ;
-      // Chassis_Cmd_Send.wz = ;
-      // Chassis_Cmd_Send.target_yaw_angle = ;
-    } else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
-      // Chassis_Cmd_Send.vx = ;
-      // Chassis_Cmd_Send.wz = ;
-      // Chassis_Cmd_Send.target_yaw_angle = ;
-    } else
-      Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
-  } else {
-    Chassis_Cmd_Send.chassis_mode =
-        CHASSIS_ZERO_FORCE; // 避免未定义的拨杆状态出现造成控制混乱
-  }
-
-  // if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
-  //   // 差速底盘只有角速度和Vx
-  //   Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
-  //   Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-  // } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
-  //   Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
-  //   Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-  // }
-  // else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
-  //   Chassis_Cmd_Send.vx = ;
-  //   Chassis_Cmd_Send.wz = ;
-  //   Chassis_Cmd_Send.target_yaw_angle = ;
-  // }
-  // else {
-  //   Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
-  // }
-
-  // 同步底盘目标角度在控制命令不为0时的目标角度与IMU角度一致
-  if (Chassis_Cmd_Send.wz != 0) {
-    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
-  }
-  if (vision_recv_data->target_yaw != 0) {
-    Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
-  }
-  Chassis_Cmd_Send.yaw_angle = IMU_data->Yaw;
-
+static void YawAngleOFFSET(void) {
   // 对齐角度修正,使其保持在-180~180度范围内,避免PID控制器出现跨越0点时的跳变
   while (Chassis_Cmd_Send.target_yaw_angle - IMU_data->Yaw >= 180.0f) {
     Chassis_Cmd_Send.target_yaw_angle -= 360.0f;
@@ -162,11 +90,374 @@ static void RemoteControlSet(void) {
   while (Chassis_Cmd_Send.target_yaw_angle - IMU_data->Yaw <= -180.0f) {
     Chassis_Cmd_Send.target_yaw_angle += 360.0f;
   }
+}
+
+/**
+ * @brief 控制输入为遥控器(调试时)的模式和控制量设置
+ */
+static void RemoteControlSet(void) {
+  if (switch_is_down(rc_data[TEMP].rc.switch_left)) {
+    // 安全模式，此状态所有电机失能
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+  } else if (switch_is_mid(rc_data[TEMP].rc.switch_left)) {
+    // 正常手控模式，此状态所有电机正常工作
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
+    if (switch_is_down(rc_data[TEMP].rc.switch_right)) {
+      //手动模式以前铲为正方向
+      // 差速底盘只有角速度和Vx
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    } else if (switch_is_mid(rc_data[TEMP].rc.switch_right)) {
+      //手动模式以后挡为正方向
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
+      Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
+    } else {
+      Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+      Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    }
+  } else if (switch_is_up(rc_data[TEMP].rc.switch_left)) {
+    // AGV模式，两个半自动模式加一个全自动模式
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
+  } else {
+    // 其他模式，此模式所有电机失能
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE; // 避免未定义的拨杆状态出现造成控制混乱
+  }
+
+  // 同步底盘目标角度在控制命令不为0时的目标角度与IMU角度一致
+  if (Chassis_Cmd_Send.wz != 0) {
+    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+  }
+  // if (vision_recv_data->target_yaw != 0) {
+  //   Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+  // }
+  Chassis_Cmd_Send.yaw_angle = IMU_data->Yaw;
+
+  YawAngleOFFSET();
 
   Chassis_Cmd_Send.yaw_angle_speed = IMU_data->Gyro[2];
 }
-static void VisionSend_Data(void) { VisionSetAltitude(IMU_data->Yaw); }
-static void GrayJudge(void) {}
+static void VisionSend_Data(void) {
+  VisionSetAltitude(IMU_data->Yaw);
+  //将TOF200C的测距数据发送给上位机作为补充
+  VisionSetLaserRanging(TOF050C_Fetch_Data.range_values[4], TOF050C_Fetch_Data.range_values[5],
+                      TOF050C_Fetch_Data.range_values[6], TOF050C_Fetch_Data.range_values[7]);
+}
+
+
+/**
+ * @brief 上台状态机
+ */
+static void UPdonePlatform(void) {
+    typedef enum {
+        STAGE_START,//启动模式
+        STAGE_APPROACH,   // 接近平台
+        STAGE_CLIMB,      // 中速冲台（vx=AGV_START_SPEED）
+        STAGE_SLOW_CLIMB, // 低速爬台（vx=UPLOAD_PLATFORM_SPEED）
+        STAGE_RETRY,      // 失败 → 后退 + 回转重试
+        STAGE_DONE,       // 上台完成
+    } ClimbStage_e;
+
+    static ClimbStage_e climb_stage = STAGE_APPROACH;
+    static float start_yaw = 0;
+    static uint32_t stage_start_ms = 0;
+    static uint32_t gray_ok_ms = 0;
+    static uint8_t retry_cnt = 0;
+
+    // 读取来自上位机的距离扫描值（后档方向）
+  float BackToPlatformDistance = 0;
+  if (vision_recv_data->NeedValue!=0) {
+    BackToPlatformDistance=vision_recv_data->NeedValue;
+  }
+
+
+    // 灰度全部低于阈值
+    bool all_gray_below = true;//
+    for (int i = 0; i < 8; i++) {
+        if (Graysensor_Fetch_Data.sensor_Normalized[i] > 0.3f) {
+            all_gray_below = false;
+            break;
+        }
+    }
+
+    float pitch = IMU_data->Pitch;
+    float yaw_change = fabsf(IMU_data->Yaw - start_yaw);
+    if (yaw_change > 180.0f) yaw_change = 360.0f - yaw_change;
+
+    uint32_t now_ms = DWT_GetTimeline_ms();
+
+    switch (climb_stage) {
+
+      case STAGE_START://测试阶段用遥控拨轮代替双边无接触启动
+      if (rc_data[TEMP].rc.dial >= 300) {
+            climb_stage = STAGE_APPROACH;
+            start_yaw = IMU_data->Yaw;
+            stage_start_ms = now_ms;
+        }
+      break;
+    case STAGE_APPROACH:
+      //接近平台
+        if (BackToPlatformDistance <= UPLOAD_PLATFORM_DISTANCE) {
+            climb_stage = STAGE_CLIMB;
+            start_yaw = IMU_data->Yaw;
+            stage_start_ms = now_ms;
+        } else {
+            // 没到台前，慢速前进找台
+            Chassis_Cmd_Send.vx = AGV_APPROACH_SPEED;
+            Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+        }
+        break;
+
+    case STAGE_CLIMB:
+        // 超时保护
+        if (now_ms - stage_start_ms > CLIMB_TIMEOUT_MS) {
+            climb_stage = STAGE_RETRY;
+            stage_start_ms = now_ms;
+            break;
+        }
+        // Yaw 偏航检测
+        if (yaw_change > YAW_DEVIATION_THRESHOLD) {
+            climb_stage = STAGE_RETRY;
+            stage_start_ms = now_ms;
+            break;
+        }
+        // 继续冲台
+        Chassis_Cmd_Send.vx = AGV_START_SPEED;
+        Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+        break;
+
+    case STAGE_SLOW_CLIMB:
+        // 超时保护
+        if (now_ms - stage_start_ms > CLIMB_TIMEOUT_MS) {
+            climb_stage = STAGE_RETRY;
+            stage_start_ms = now_ms;
+            break;
+        }
+        // Yaw 偏航检测
+        if (yaw_change > YAW_DEVIATION_THRESHOLD) {
+            climb_stage = STAGE_RETRY;
+            stage_start_ms = now_ms;
+            break;
+        }
+        // 灰度连续达标 → 上台成功
+        if (all_gray_below) {
+            if (gray_ok_ms == 0) {
+                gray_ok_ms = now_ms;
+            } else if (now_ms - gray_ok_ms >= GRAY_CONFIRM_MS) {
+                climb_stage = STAGE_DONE;
+                break;
+            }
+        } else {
+            gray_ok_ms = 0; // 灰度未达标，复位计时
+        }
+        // 继续爬台
+        Chassis_Cmd_Send.vx = UPLOAD_PLATFORM_SPEED;
+        Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+        break;
+
+    case STAGE_RETRY:
+        retry_cnt++;
+        if (retry_cnt >= MAX_RETRY_COUNT) {
+            // 重试耗尽，强制认为上台完成（保底）
+            climb_stage = STAGE_DONE;
+            break;
+        }
+        // 后退到安全距离
+        if (BackToPlatformDistance > UPLOAD_PLATFORM_DISTANCE + 5.0f) {
+            // 退够了，重新接近
+            climb_stage = STAGE_APPROACH;
+        } else {
+            Chassis_Cmd_Send.vx = -UPLOAD_PLATFORM_SPEED;
+            Chassis_Cmd_Send.wz = 0.3f;
+            Chassis_Cmd_Send.target_yaw_angle = start_yaw;
+        }
+        break;
+
+    case STAGE_DONE:
+        AGV_MODE_GLOBAL.StartFlag = true;
+        AGV_MODE_GLOBAL.Mode = AGV_Mode_SCANPLATFORM;
+        AGV_MODE_GLOBAL.Priority = 2;
+        // 复位状态机，下次不再进入
+        climb_stage = STAGE_APPROACH;
+        retry_cnt = 0;
+        break;
+    }
+}
+static bool UnderPlatformDetect(void) {
+
+  bool edge_detected = false;
+  // if (){}
+}
+/**
+ * @brief ModeJudge — 优先级调度器（流程图右侧）
+ *        根据传感器条件选出最高优先级就绪模式
+ */
+static void ModeJudge(void) {
+  if (Chassis_Cmd_Send.chassis_mode != CHASSIS_AGV_MODE) {
+    // 非AGV模式，不干预
+    return;
+  }
+
+  /* 首次启动 → StartMode */
+  if (AGV_MODE_GLOBAL.StartFlag == false) {
+    AGV_MODE_GLOBAL.Mode = AGV_Mode_Start;
+    AGV_MODE_GLOBAL.Priority = 10;
+    return;
+  }
+
+  /* ===== 正常决策：从高到低检查各模式条件 ===== */
+  AGV_Mode_e best_mode = AGV_Mode_ZERO_FORCE;
+  uint8_t best_priority = 0;
+  //优先级P10：掉台检测后台运行一旦检测到立即介入启动返回平台
+  if (UnderPlatformDetect()) {
+
+  }
+  // P10：掉台检测（最高优先级）
+  // if (/* 掉台条件，如 TOF 对地距离突变 */) {
+  //     best_mode = AGV_Mode_RETURNPLATFORM;
+  //     best_priority = 10;
+  //     goto done;
+  // }
+
+  // P9：敌方袭击（视觉检测到敌方）
+  // if (/* 敌方袭击条件 */) {
+  //     best_mode = AGV_Mode_ATTACK;
+  //     best_priority = 9;
+  //     goto done;
+  // }
+
+  // P8：检测到能量块
+  // if (/* 能量块条件 */) {
+  //     best_mode = AGV_Mode_FLLOW;
+  //     best_priority = 8;
+  //     goto done;
+  // }
+
+  // P7：检测到对方机器人
+  if (vision_recv_data->target_yaw != 0) {
+      best_mode = AGV_Mode_ATTACK;
+      best_priority = 7;
+      goto done;
+  }
+
+  // 默认：自动巡台
+  best_mode = AGV_Mode_SCANPLATFORM;
+  best_priority = 2;
+
+done:
+  AGV_MODE_GLOBAL.Mode = best_mode;
+  AGV_MODE_GLOBAL.Priority = best_priority;
+
+}
+
+/**
+ * @brief AutoPatrolTask — 自动巡台任务（流程图下方）
+ *        灰度归一化 + 加权算速度 + TOF边缘检测 + 转向角选择
+ */
+static void AutoPatrolTask(void) {
+//检测四角对地距离，判断是否检测到边缘（需调参）
+  bool edge_detected = false;
+    if (TOF050C_Fetch_Data.range_values[0]>AGV_LASER_DISTANCE_FL || TOF050C_Fetch_Data.range_values[1]>AGV_LASER_DISTANCE_FR ||
+        TOF050C_Fetch_Data.range_values[2]>AGV_LASER_DISTANCE_BL || TOF050C_Fetch_Data.range_values[3]>AGV_LASER_DISTANCE_BR) {
+        edge_detected = true;
+    }
+/*Begin 灰度计算速度*/
+    float gray_norm[8];
+    for (int i = 0; i < 8; i++) {
+        gray_norm[i] = Graysensor_Fetch_Data.sensor_Normalized[i];
+    }
+    float avg_gray = 0;
+    for (int i = 0; i < 8; i++) avg_gray += gray_norm[i];
+    avg_gray /= 8.0f;
+    // 灰度0→最快, 灰度1→最慢(停)
+    float speed = AGV_APPROACH_SPEED * (1.0f - avg_gray);
+    Chassis_Cmd_Send.vx = (speed < 0.05f) ? 0.05f : speed;
+/*End 灰度计算速度*/
+
+    /*Begin 灰度+Yaw 判断当前位置*/
+    bool on_diagonal_edge = false;
+    // if (/* 灰度+Yaw判定在对角边 */) { on_diagonal_edge = true; }
+
+    if (edge_detected || avg_gray > 0.7f) {
+        bool yaw_point_outward = false;
+        // if (/* 判断当前Yaw是否向外 */) { yaw_point_outward = true; }
+
+        if (!yaw_point_outward) {
+            if (on_diagonal_edge) {
+                // 对角边 → 转120°
+                Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw + 120.0f;
+            } else {
+                // 直边 → 转90°
+                Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw + 90.0f;
+            }
+        }
+        // 如果Yaw已经向外，不转方向继续走
+    }
+
+    // 6. 检查方向：灰度值是否在减小（说明在往白色区域走→方向对）
+    //    需保存上一帧灰度值进行比较：若灰度增大(变黑→方向错)，回退重算
+    // static float last_avg_gray = 0;
+    // if (avg_gray > last_avg_gray) {
+    //     // 方向不对，调头或重算
+    // }
+    // last_avg_gray = avg_gray;
+
+    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    YawAngleOFFSET();
+}
+
+/**
+ * @brief AGV_Mode_Switch — 根据当前模式执行对应的行为函数
+ */
+static void AGV_Mode_Switch(void) {
+  switch (AGV_MODE_GLOBAL.Mode) {
+  case AGV_Mode_Start:
+    UPdonePlatform();
+    break;
+  case AGV_Mode_SCANPLATFORM:
+    AutoPatrolTask();
+    break;
+  case AGV_Mode_FLLOW:
+    // 视觉跟随模式
+    if (vision_recv_data->target_yaw != 0) {
+        Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+    }
+    Chassis_Cmd_Send.vx = 0.5f;
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
+    break;
+  case AGV_Mode_ATTACK:
+    // 攻击模式
+    if (vision_recv_data->target_yaw != 0) {
+        Chassis_Cmd_Send.vx = 1.5f;
+        Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+        Chassis_Cmd_Send.chassis_mode = CHASSIS_AGV_MODE;
+    }
+    break;
+  case AGV_Mode_OBSTACLE:
+    // 避障模式
+    Chassis_Cmd_Send.vx = -0.5f;
+    Chassis_Cmd_Send.wz = 0.8f;
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
+    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    break;
+  case AGV_Mode_ANTIDROP:
+    // 防掉落模式
+    Chassis_Cmd_Send.vx = 0;
+    Chassis_Cmd_Send.wz = 0;
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+    break;
+  case AGV_Mode_RETURNPLATFORM:
+    // 掉台返回模式
+    Chassis_Cmd_Send.vx = -0.8f;
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_NORMAL;
+    Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
+    break;
+  case AGV_Mode_ZERO_FORCE:
+  default:
+    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+    break;
+  }
+}
 
 /* 机器人核心控制任务,200Hz频率运行(必须高于视觉发送频率) */
 void RobotCMDTask() {
@@ -180,6 +471,12 @@ void RobotCMDTask() {
   VisionSend_Data();
   VisionSend();
   RemoteControlSet();
+
+  /* ===== AGV 决策链：先选模式 → 再执行模式 ===== */
+  if (Chassis_Cmd_Send.chassis_mode == CHASSIS_AGV_MODE) {
+    ModeJudge();        // Step 1: 根据传感器条件选模式
+    AGV_Mode_Switch();  // Step 2: 根据模式填控制命令
+  }
 
   /*Control Code End*/
   // 发布底盘命令与灰度传感器命令

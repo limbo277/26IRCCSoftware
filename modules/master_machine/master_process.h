@@ -3,7 +3,7 @@
 
 #include "bsp_usart.h"
 #include "seasky_protocol.h"
-
+#include "robot_cmd.h"
 #define VISION_RECV_SIZE 18u // 当前为固定值,36字节
 #define VISION_SEND_SIZE 36u
 
@@ -43,6 +43,7 @@ typedef struct
 
 	float target_yaw;
 	float tracing_id;
+        float NeedValue;
 } Vision_Recv_s;
 
 typedef enum
@@ -80,6 +81,7 @@ typedef struct
         float laser_ranging_L1;
         float laser_ranging_R0;
         float laser_ranging_R1;
+        float agv_mode;//底盘模式
 } Vision_Send_s;
 #pragma pack()
 

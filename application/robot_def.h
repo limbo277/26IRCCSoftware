@@ -245,7 +245,7 @@ typedef struct
     // 控制命令字段，如果需要
 } TOF050C_Ctrl_Cmd_s;
 
-// TOF050C发布的反馈数据
+// TOF发布的反馈数据
 typedef struct
 {
     uint16_t range_values[8]; // 8个传感器的测距值，前4 TOF050C，后4 TOF200C
