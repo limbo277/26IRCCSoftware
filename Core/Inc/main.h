@@ -79,13 +79,13 @@ void Error_Handler(void);
 #define ID1_GPIO_Port GPIOE
 #define DCMI_REST_Pin GPIO_PIN_12
 #define DCMI_REST_GPIO_Port GPIOB
-#define ID5_Pin GPIO_PIN_10
-#define ID5_GPIO_Port GPIOD
-#define ID4_Pin GPIO_PIN_7
+#define ID5_Pin GPIO_PIN_4
+#define ID5_GPIO_Port GPIOB
+#define ID4_Pin GPIO_PIN_10
 #define ID4_GPIO_Port GPIOD
 #define ID2_Pin GPIO_PIN_3
 #define ID2_GPIO_Port GPIOB
-#define ID3_Pin GPIO_PIN_4
+#define ID3_Pin GPIO_PIN_7
 #define ID3_GPIO_Port GPIOB
 #define ID7_Pin GPIO_PIN_8
 #define ID7_GPIO_Port GPIOB

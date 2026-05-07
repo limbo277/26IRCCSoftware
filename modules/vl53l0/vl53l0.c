@@ -826,13 +826,13 @@ void multisensor_vl53l0_Init()
     }
 
     // 全部复位
-    HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_RESET);
 
     // 传感器1 → 0x34
-    HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
     DWT_Delay(0.1f);
     if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
         vl53l0_stop_vars[0] = stop_variable;
@@ -842,16 +842,16 @@ void multisensor_vl53l0_Init()
     }
     DWT_Delay(0.1f);
     //
-    // // 传感器2 → 0x35
-    // HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_SET);
-    // DWT_Delay(0.1f);
-    // if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
-    //     vl53l0_stop_vars[1] = stop_variable;
-    //     Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR2);
-    //     vl53l0_init_ok[1] = 1;
-    //     VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR2, 0);
-    // }
-    // DWT_Delay(0.1f);
+    // 传感器2 → 0x35
+    HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_SET);
+    DWT_Delay(0.1f);
+    if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
+        vl53l0_stop_vars[1] = stop_variable;
+        Set_Address(VL53L0X_DEFAULT_I2C_ADDR, VL53L0X_DEFAULT_I2C_ADDR2);
+        vl53l0_init_ok[1] = 1;
+        VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR2, 0);
+    }
+    DWT_Delay(0.1f);
     //
     // // 传感器3 → 0x36
     // HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_SET);

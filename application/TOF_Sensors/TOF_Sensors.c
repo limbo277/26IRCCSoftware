@@ -21,10 +21,7 @@ typedef struct {
  */
 typedef struct {
     uint16_t range_values[8]; // 8个传感器的测距值，前4 TOF050C，后4 TOF200C
-    uint16_t laser_range_RF,; //右前
-    uint16_t laser_range_RB; //右后
-    uint16_t laser_range_LF; //左前
-    uint16_t laser_range_LB; //左后
+
     uint8_t data_valid;       // 数据是否有效
     uint8_t sensor_online;    // 传感器是否在线
 } TOF050C_Upload_Data_s;
@@ -52,7 +49,7 @@ void TOF050CInit()
     };
     tof_iic = IICRegister(&tof_i2c_conf);
 
-    // 初始化VL6180X多传感器
+    // 初始化VL6180X多传感器（TOF050C）
     multisensor_vl6180x();
 
     // 初始化VL53L0多传感器
@@ -63,10 +60,10 @@ void TOF050CInit()
     TOF050C_Pub = PubRegister("TOF050C_Feed", sizeof(TOF050C_Upload_Data_s));
 }
 
-/**
- * @brief TOF050C应用任务
- * 放入实时系统以一定频率运行
- */
+// /**
+//  * @brief TOF050C应用任务
+//  * 放入实时系统以一定频率运行
+//  */
 void TOF050CTask()
 {
     // 获取控制命令
@@ -75,13 +72,13 @@ void TOF050CTask()
     // 读取8个传感器的测距数据，前4 TOF050C，后4 TOF200C
     // TOF050C (VL6180X) 传感器 0-3
     TOF050C_Feedback_Data.range_values[0] = VL6180X_ReadRangeSingleMillimeters(0x60, 0x61); // 地址 0x30
-    // TOF050C_Feedback_Data.range_values[1] = VL6180X_ReadRangeSingleMillimeters(0x62, 0x63); // 地址 0x31
-    // TOF050C_Feedback_Data.range_values[2] = VL6180X_ReadRangeSingleMillimeters(0x64, 0x65); // 地址 0x32
-    // TOF050C_Feedback_Data.range_values[3] = VL6180X_ReadRangeSingleMillimeters(0x66, 0x67); // 地址 0x33
-    //
+    TOF050C_Feedback_Data.range_values[1] = VL6180X_ReadRangeSingleMillimeters(0x62, 0x63); // 地址 0x31
+    TOF050C_Feedback_Data.range_values[2] = VL6180X_ReadRangeSingleMillimeters(0x64, 0x65); // 地址 0x32
+    TOF050C_Feedback_Data.range_values[3] = VL6180X_ReadRangeSingleMillimeters(0x66, 0x67); // 地址 0x33
+    // //
     // // TOF200C (VL53L0) 传感器 4-7
-    // TOF050C_Feedback_Data.range_values[4] = VL53L0X_readRangeSingleMillimeters(0x34); // 地址 0x34
-    // TOF050C_Feedback_Data.range_values[5] = VL53L0X_readRangeSingleMillimeters(0x35); // 地址 0x35
+    TOF050C_Feedback_Data.range_values[4] = VL53L0X_readRangeSingleMillimeters(0x34); // 地址 0x34
+    TOF050C_Feedback_Data.range_values[5] = VL53L0X_readRangeSingleMillimeters(0x35); // 地址 0x35
     // TOF050C_Feedback_Data.range_values[6] = VL53L0X_readRangeSingleMillimeters(0x36); // 地址 0x36
     // TOF050C_Feedback_Data.range_values[7] = VL53L0X_readRangeSingleMillimeters(0x37); // 地址 0x37
 
