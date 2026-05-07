@@ -320,44 +320,58 @@ void multisensor_vl6180x()
 	HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_RESET);
+	for (uint8_t address = 0x30;address<=0x45;address++ ) {
+	  if(address == 0x30)
+	  {
+	    HAL_GPIO_WritePin(ID1_GPIO_Port, ID1_Pin, GPIO_PIN_SET);
+	    VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	    VL6180x_ChangeAddress(address);
+	    VL6180X_Init(0x30 << 1, (0x30 << 1) | 0x01);
+	    VL6180X_SetScaling(3,0x30 << 1, (0x30 << 1) | 0x01);
 
-	for (uint8_t address = 0x30;address<=0x45;address++ )
-	{
+	  }
+	  else if (address == 0x31)
+	  {
+	    HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_SET);
+	    VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	    VL6180x_ChangeAddress(address);
+	    VL6180X_Init(0x31 << 1, (0x31 << 1) | 0x01);
+	    VL6180X_SetScaling(3,0x31 << 1, (0x31 << 1) | 0x01);
 
+	  }
+	  else if(address == 0x32)
+	  {
+	    HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
+	    VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	    VL6180x_ChangeAddress(address);
+	    VL6180X_Init(0x32 << 1, (0x32 << 1) | 0x01);
+	    VL6180X_SetScaling(3,0x32 << 1, (0x32 << 1) | 0x01);
 
-		if(address == 0x30)
-		{
-			HAL_GPIO_WritePin(ID1_GPIO_Port, ID1_Pin, GPIO_PIN_SET);
-			VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-			VL6180x_ChangeAddress(address);
-			VL6180X_Init(0x30 << 1, (0x30 << 1) | 0x01);
-			VL6180X_SetScaling(3,0x30 << 1, (0x30 << 1) | 0x01);
-
-		}
-		 else if (address == 0x31)
-		 {
-		 	 HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_SET);
-		 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-		 	VL6180x_ChangeAddress(address);
-		 	VL6180X_Init(0x31 << 1, (0x31 << 1) | 0x01);
-		 	VL6180X_SetScaling(3,0x31 << 1, (0x31 << 1) | 0x01);
-
-		 }
-		 else if(address == 0x32)
-		 {
-		 	 HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
-		 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-		 	VL6180x_ChangeAddress(address);
-		 	VL6180X_Init(0x32 << 1, (0x32 << 1) | 0x01);
-		VL6180X_SetScaling(3,0x32 << 1, (0x32 << 1) | 0x01);
-
-		 }
-		else if(address == 0x33){
-			HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
-		VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
-			VL6180x_ChangeAddress(address);
-		VL6180X_Init(0x33 << 1, (0x33 << 1) | 0x01);
-		 VL6180X_SetScaling(3,0x33 << 1, (0x33 << 1) | 0x01);
-		}
+	  }
+	  else if(address == 0x33){
+	    HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
+	    VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	    VL6180x_ChangeAddress(address);
+	    VL6180X_Init(0x33 << 1, (0x33 << 1) | 0x01);
+	    VL6180X_SetScaling(3,0x33 << 1, (0x33 << 1) | 0x01);
+	  }
+	  // else if (address == 0x34)
+	  // {
+	  //   HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
+	  //   VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	  //   VL6180x_ChangeAddress(address);
+	  //   VL6180X_Init(0x34 << 1, (0x34 << 1) | 0x01);
+	  //   VL6180X_SetScaling(3,0x34 << 1, (0x34 << 1) | 0x01);
+	  //
+	  // }
+	  // else if (address == 0x35)
+	  // {                 	 HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_SET);
+	  //   VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
+	  //   VL6180x_ChangeAddress(address);
+	  //   VL6180X_Init(0x35 << 1, (0x35 << 1) | 0x01);
+	  //   VL6180X_SetScaling(3,0x35 << 1, (0x35 << 1) | 0x01);
+	  // }
 	}
 }

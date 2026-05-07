@@ -308,8 +308,8 @@ uint8_t VL53L0X_Init(uint8_t add, bool io_2v8)
 
     // -- VL53L0X_SetSequenceStepEnable() end
 
-    // "Recalculate timing budget"
-    VL53L0X_setMeasurementTimingBudget(add, measurement_timing_budget_us);
+    // "Recalculate timing budget" — 使用最低 20ms 加速读取
+    VL53L0X_setMeasurementTimingBudget(add, 20000);
 
     // VL53L0X_StaticInit() end
 
@@ -638,7 +638,6 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
     range = VL53L0X_ReadBytee_16Bit(add, RESULT_RANGE_STATUS + 10);
 
     VL53L0X_WriteByte(add, SYSTEM_INTERRUPT_CLEAR, 0x01);
-    DWT_Delay(0.001f);
     return range;
 }
 
@@ -647,29 +646,10 @@ uint16_t VL53L0X_readRangeContinuousMillimeters(uint8_t add)
 // based on VL53L0X_PerformSingleRangingMeasurement()
 uint16_t VL53L0X_readRangeSingleMillimeters(uint8_t add)
 {
-    // // 根据地址查找对应传感器的 stop_variable
-    // uint8_t stop_var = stop_variable;  // 默认使用全局值
-    // if (add >= 0x34 && add <= 0x37) {
-    //     uint8_t idx = add - 0x34;
-    //     if (vl53l0_init_ok[idx]) {
-    //         stop_var = vl53l0_stop_vars[idx];
-    //     }
-    // }
-
-  VL53L0X_WriteByte(add,0x80, 0x01);
-  VL53L0X_WriteByte(add,0xFF, 0x01);
-  VL53L0X_WriteByte(add,0x00, 0x00);
-  VL53L0X_WriteByte(add,0x91, stop_variable);
-  VL53L0X_WriteByte(add,0x00, 0x01);
-  VL53L0X_WriteByte(add,0xFF, 0x00);
-  VL53L0X_WriteByte(add,0x80, 0x00);
-
     VL53L0X_WriteByte(add, SYSRANGE_START, 0x01);
 
-    // "Wait until start bit has been cleared"
+    // 等待硬件确认启动（正常 1 次 I2C 读就退出）
     startTimeout();
-    // uint16_t loop_count = 0;
-    //    const uint16_t MAX_LOOPS = 1000;  // 额外保护，避免无限循环
     while (VL53L0X_ReadByte(add, SYSRANGE_START) & 0x01)
     {
         if (checkTimeoutExpired())
@@ -677,14 +657,6 @@ uint16_t VL53L0X_readRangeSingleMillimeters(uint8_t add)
             did_timeout = true;
             return 65535;
         }
-        // loop_count++;
-        //        if (loop_count > MAX_LOOPS) {
-        //            did_timeout = true;
-        ////            printf("ERROR: Loop timeout for sensor 0x%02X\n", add);
-        //            return 65535;
-        //        }
-
-        DWT_Delay(0.001f);
     }
 
     return VL53L0X_readRangeContinuousMillimeters(add);
@@ -825,11 +797,11 @@ void multisensor_vl53l0_Init()
         vl53l0_init_ok[i] = 0;
     }
 
-    // 全部复位
+    // // 全部复位
     HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_RESET);
 
     // 传感器1 → 0x34
     HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
@@ -852,7 +824,7 @@ void multisensor_vl53l0_Init()
         VL53L0X_startContinuous(VL53L0X_DEFAULT_I2C_ADDR2, 0);
     }
     DWT_Delay(0.1f);
-    //
+
     // // 传感器3 → 0x36
     // HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_SET);
     // DWT_Delay(0.1f);
