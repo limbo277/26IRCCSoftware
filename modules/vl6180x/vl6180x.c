@@ -2,10 +2,14 @@
 // Created by LIMBO on 2026/4/23.
 //
 #include "vl6180x.h"
-#include  "stdio.h"
-#include  "main.h"
 
-extern I2C_HandleTypeDef hi2c2;
+#include "bsp_dwt.h"
+#include "bsp_iic.h"
+#include "cmsis_os.h"
+#include "main.h"
+#include "stdio.h"
+
+extern IICInstance *tof_iic;  // BSP I2C 实例（由 TOF_Sensors.c 初始化）
 
 // 修改为正确的默认地址�?x29对应�?位地址�?
 #define VL6180X_DEFAULT_ADDRESS   0x29  // 7位地址
@@ -89,43 +93,41 @@ uint8_t ptp_offset;
 uint8_t scaling;
 uint16_t io_timeout1;
 
-
+/* ---- BSP I2C 封装：VL6180X 使用 16-bit 寄存器地址 ---- */
+static inline void tof6180_mem_write(uint8_t addr_write, uint16_t reg,
+                                      uint8_t *data, uint16_t size) {
+    IICSetDeviceAddress(tof_iic, addr_write >> 1); // HAL格式→7-bit
+    IICAccessMem(tof_iic, reg, data, size, IIC_WRITE_MEM, 0); // 16-bit mem
+}
+static inline uint8_t tof6180_mem_read(uint8_t addr_write, uint16_t reg) {
+    uint8_t data = 0;
+    IICSetDeviceAddress(tof_iic, addr_write >> 1);
+    IICAccessMem(tof_iic, reg, &data, 1, IIC_READ_MEM, 0);
+    return data;
+}
 
 void VL6180X_WR_CMD(uint16_t cmd, uint8_t data,uint8_t addr_write)
 {
-    uint8_t data_write[3];
-    data_write[0]=(cmd>>8)&0xff;
-    data_write[1]=cmd&0xff;
-    data_write[2]=data&0xff;
-    HAL_I2C_Master_Transmit(&hi2c2, addr_write, data_write, 3, 0x100);
+    tof6180_mem_write(addr_write, cmd, &data, 1);
 }
 
 void VL6180X_WR_CMD2(uint16_t cmd, uint16_t data,uint8_t addr_write)
 {
-    uint8_t data_write[4];
-    data_write[0]=(cmd>>8)&0xff;
-    data_write[1]=cmd&0xff;
-     data_write[2]=(data>>8)&0xff;
-    data_write[3]=data&0xff;
-    HAL_I2C_Master_Transmit(&hi2c2, addr_write, data_write, 4, 0x100);
+    uint8_t buf[2] = {(data >> 8) & 0xff, data & 0xff};
+    tof6180_mem_write(addr_write, cmd, buf, 2);
 }
 
 uint8_t VL6180X_ReadByte(uint16_t reg,uint8_t addr_write,uint8_t addr_read)
 {
-    uint8_t data_write[2];
-    uint8_t receive_data=0;
-    data_write[0]=(reg>>8)&0xff;
-    data_write[1]=reg&0xff;
-    HAL_I2C_Master_Transmit(&hi2c2, addr_write, data_write, 2, 0x100);
-    HAL_I2C_Master_Receive(&hi2c2, addr_read, &receive_data, 1, 0x100);
-    return receive_data;
+    (void)addr_read; // BSP IICAccessMem 自动处理 R/W 位
+    return tof6180_mem_read(addr_write, reg);
 }
 
 uint8_t VL6180X_Init(uint8_t addr_write,uint8_t addr_read)
 {
     ptp_offset = 0;
     scaling = 0;
-    io_timeout1 = 2;
+    io_timeout1 = 2;  // 重试次数（非毫秒！BSP I2C 已提供 100ms 硬件超时）
 
     ptp_offset = VL6180X_ReadByte(SYSRANGE__PART_TO_PART_RANGE_OFFSET,addr_write,addr_read);
     uint8_t reset=VL6180X_ReadByte(0x016,addr_write,addr_read);//check wether reset over
@@ -247,7 +249,7 @@ uint8_t VL6180X_Poll_Range(uint8_t addr_write,uint8_t addr_read)
         }
         status=VL6180X_ReadByte(0x04f,addr_write,addr_read);
         range_status=status&0x07;
-       HAL_Delay(1);
+       osDelay(1);
     }
     return 0;
 }
@@ -273,7 +275,7 @@ uint16_t VL6180X_ReadRangeSingleMillimeters(uint8_t addr_write,uint8_t addr_read
     VL6180X_Start_Range(addr_write,addr_read);
     /* Wait for measurement ready. */
     VL6180X_Poll_Range(addr_write,addr_read);
-    HAL_Delay(100);
+    osDelay(30);
     return (uint16_t)scaling * VL6180_Read_Range(addr_write,addr_read);
 }
 
@@ -285,61 +287,28 @@ uint16_t VL6180X_ReadRangeSingleMillimeters(uint8_t addr_write,uint8_t addr_read
   * @retval HAL_OK: 成功 | HAL_ERROR: 失败
   */
 HAL_StatusTypeDef VL6180_ReadRegister(uint8_t dev_addr, uint16_t reg_addr, uint8_t *data) {
-    uint8_t reg[2] = {
-        (reg_addr >> 8) & 0xFF,  // 寄存器高字节
-        reg_addr & 0xFF           // 寄存器低字节
-    };
-
-    // 发送寄存器地址
-    HAL_StatusTypeDef status = HAL_I2C_Master_Transmit(
-        &hi2c2,
-         dev_addr << 1,           // HAL库要求左移1位
-        reg,
-        sizeof(reg),
-        100
-    );
-
-    if (status != HAL_OK) {
-        return status;
-    }
-
-    // 读取寄存器值
-    status = HAL_I2C_Master_Receive(
-        &hi2c2,
-        dev_addr << 1,
-        data,
-        1,
-        100
-    );
-
-    return status;
+    IICSetDeviceAddress(tof_iic, dev_addr);
+    IICAccessMem(tof_iic, reg_addr, data, 1, IIC_READ_MEM, 0);
+    return HAL_OK;
 }
 
 void VL6180x_ChangeAddress(uint8_t new_address_7bit) {
 
-	uint8_t data = new_address_7bit;  // 新的7位地址（范�?x01-0x7F�?
-    HAL_I2C_Mem_Write(
-        &hi2c2,
-        0x29 << 1,                   // 默认地址0x29（HAL库要求左�?位）
-        0x0212,                       // 寄存器地址
-        I2C_MEMADD_SIZE_16BIT,       // 寄存器地址长度�?6位）
-        &data,                       // 新的7位地址�?
-        1,                           // 数据长度
-        100                          // 超时时间（ms�?
-    );
+    uint8_t data = new_address_7bit;
+    IICSetDeviceAddress(tof_iic, 0x29);
+    IICAccessMem(tof_iic, 0x0212, &data, 1, IIC_WRITE_MEM, 0);
 }
 
 void AddressTest()
 {
-
-	for (uint8_t addr = 0x08; addr <= 0x77; addr++)
-	{
-		HAL_StatusTypeDef status = HAL_I2C_IsDeviceReady(&hi2c2, addr << 1, 1, 10);
+    for (uint8_t addr = 0x08; addr <= 0x77; addr++)
+    {
+        IICSetDeviceAddress(tof_iic, addr);
+        HAL_StatusTypeDef status = HAL_I2C_IsDeviceReady(tof_iic->handle, addr << 1, 1, 10);
         if (status == HAL_OK) {
             printf("Device found at 0x%02X\n", addr);
         }
-	}
-
+    }
 }
 
 void multisensor_vl6180x()
@@ -348,7 +317,7 @@ void multisensor_vl6180x()
 
 	HAL_GPIO_WritePin(ID1_GPIO_Port, ID1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(ID2_GPIO_Port, ID2_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_RESET);
 
 	for (uint8_t address = 0x30;address<=0x45;address++ )
@@ -370,20 +339,20 @@ void multisensor_vl6180x()
 		// 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
 		// 	VL6180x_ChangeAddress(address);
 		// 	VL6180X_Init(0x31 << 1, (0x31 << 1) | 0x01);
-		// 	VL6180X_SetScaling(1,0x31 << 1, (0x31 << 1) | 0x01);
+		// 	VL6180X_SetScaling(3,0x31 << 1, (0x31 << 1) | 0x01);
 		//
 		// }
 		// else if(address == 0x32)
 		// {
-		// 	 HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
+		// 	 HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
 		// 	VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
 		// 	VL6180x_ChangeAddress(address);
 		// 	VL6180X_Init(0x32 << 1, (0x32 << 1) | 0x01);
-		// 	VL6180X_SetScaling(1,0x32 << 1, (0x32 << 1) | 0x01);
+		// 	VL6180X_SetScaling(3,0x32 << 1, (0x32 << 1) | 0x01);
 		//
 		// }
 		// else if(address == 0x33){
-		// 	HAL_GPIO_WritePin(ID4_GPIO_Port, ID4_Pin, GPIO_PIN_SET);
+		// 	HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
 		// VL6180X_Init(0x29 << 1, (0x29 << 1) | 0x01);
 		// 	VL6180x_ChangeAddress(address);
 		// VL6180X_Init(0x33 << 1, (0x33 << 1) | 0x01);
@@ -391,3 +360,4 @@ void multisensor_vl6180x()
 		// }
 	}
 }
+

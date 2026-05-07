@@ -42,8 +42,9 @@ void Graysensor_Kalman_Init() {
 void Graysensor_Kalman_Filter() {
   for (int i = 0; i < 8; i++) {
     Gray_KF[i].MeasuredVector[0] = grayscale_data->sensor_values[i];
+    Kalman_Filter_Update(&Gray_KF[i]);
     grayscale_data_KF.sensor_values[i] =
-        (uint16_t)Kalman_Filter_Update(&Gray_KF[i]);
+        (uint16_t)Gray_KF[i].FilteredValue[0];
   }
 }
 /*
@@ -152,7 +153,7 @@ void GraysensorTask() {
     // 清除标志位
     GrayscaleClearNewPackageFlag();
 
-    // // 使用阻塞发送灰度传感器数据
+    // 使用阻塞发送灰度传感器数据
     // char tx_buf[128];
     // int len = sprintf(tx_buf, "%d,%d,%d,%d,%d,%d,%d,%d\r\n",
     //                   Graysensor_Feedback_Data.sensor_values[0],
@@ -166,7 +167,7 @@ void GraysensorTask() {
     // HAL_UART_Transmit(&huart8, (uint8_t *)tx_buf, len, 100);
   }
 
-  osDelay(10);
+  // osDelay(10);
   // 发布反馈数据
   PubPushMessage(Graysensor_Pub, (void *)&Graysensor_Feedback_Data);
 }

@@ -5,6 +5,9 @@
 #include "vl6180x.h"
 #include "vl53l0.h"
 #include "message_center.h"
+#include "bsp_iic.h"
+
+extern IICInstance *tof_iic;  // BSP I2C 实例（定义在 vl53l0.c）
 
 /**
  * @brief TOF050C控制命令结构体定义
@@ -18,6 +21,10 @@ typedef struct {
  */
 typedef struct {
     uint16_t range_values[8]; // 8个传感器的测距值，前4 TOF050C，后4 TOF200C
+    uint16_t laser_range_RF,; //右前
+    uint16_t laser_range_RB; //右后
+    uint16_t laser_range_LF; //左前
+    uint16_t laser_range_LB; //左后
     uint8_t data_valid;       // 数据是否有效
     uint8_t sensor_online;    // 传感器是否在线
 } TOF050C_Upload_Data_s;
@@ -35,6 +42,16 @@ static TOF050C_Upload_Data_s TOF050C_Feedback_Data; // 反馈数据
  */
 void TOF050CInit()
 {
+    // 注册 TOF 共享 BSP I2C 实例（超时 100ms，替代原先的 HAL 0xffff 超时）
+    IIC_Init_Config_s tof_i2c_conf = {
+        .handle = &hi2c2,
+        .dev_address = 0x29,        // 默认地址，后续通过 IICSetDeviceAddress 切换
+        .work_mode = IIC_BLOCK_MODE,
+        .callback = NULL,
+        .id = NULL,
+    };
+    tof_iic = IICRegister(&tof_i2c_conf);
+
     // 初始化VL6180X多传感器
     multisensor_vl6180x();
 
@@ -63,7 +80,7 @@ void TOF050CTask()
     // TOF050C_Feedback_Data.range_values[3] = VL6180X_ReadRangeSingleMillimeters(0x66, 0x67); // 地址 0x33
     //
     // // TOF200C (VL53L0) 传感器 4-7
-    TOF050C_Feedback_Data.range_values[4] = VL53L0X_readRangeSingleMillimeters(0x34); // 地址 0x34
+    // TOF050C_Feedback_Data.range_values[4] = VL53L0X_readRangeSingleMillimeters(0x34); // 地址 0x34
     // TOF050C_Feedback_Data.range_values[5] = VL53L0X_readRangeSingleMillimeters(0x35); // 地址 0x35
     // TOF050C_Feedback_Data.range_values[6] = VL53L0X_readRangeSingleMillimeters(0x36); // 地址 0x36
     // TOF050C_Feedback_Data.range_values[7] = VL53L0X_readRangeSingleMillimeters(0x37); // 地址 0x37

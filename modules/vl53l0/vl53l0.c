@@ -4,17 +4,28 @@
 #include "vl53l0.h"
 #include "stdio.h"
 #include "bsp_dwt.h"
+#include "bsp_iic.h"
 
-extern I2C_HandleTypeDef hi2c2;  // 假设使用 hi2c2，与 VL6180X 一致
+IICInstance *tof_iic;           // TOF 共享 BSP I2C 实例（由 TOF_Sensors.c 初始化）
 
 uint32_t timeout_start_ms = 0;
-uint16_t io_timeout = 0;
+uint16_t io_timeout = 500;      // 软件超时 500ms（BSP I2C 硬件超时 100ms）
 bool did_timeout = 0;
 
 // Record the current time to check an upcoming timeout against
 #define startTimeout() (timeout_start_ms = (uint32_t)DWT_GetTimeline_ms())
 
 #define checkTimeoutExpired() (io_timeout > 0 && ((uint32_t)DWT_GetTimeline_ms() - timeout_start_ms > io_timeout))
+
+/* ---- BSP I2C 封装：8-bit 寄存器地址的 Mem Read/Write ---- */
+static inline void tof_mem_write(uint8_t add, uint8_t reg, uint8_t *data, uint16_t size) {
+    IICSetDeviceAddress(tof_iic, add);
+    IICAccessMem(tof_iic, reg, data, size, IIC_WRITE_MEM, 1);
+}
+static inline void tof_mem_read(uint8_t add, uint8_t reg, uint8_t *data, uint16_t size) {
+    IICSetDeviceAddress(tof_iic, add);
+    IICAccessMem(tof_iic, reg, data, size, IIC_READ_MEM, 1);
+}
 
 // Decode VCSEL (vertical cavity surface emitting laser) pulse period in PCLKs
 // from register value
@@ -33,58 +44,48 @@ void VL53L0X_setTimeout(uint16_t timeout_ms)
 
 void VL53L0X_WriteByte(uint8_t add, uint8_t reg, uint8_t data)
 {
-    HAL_I2C_Mem_Write(&hi2c2, (add << 1) | 0, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 0xffff);
+    tof_mem_write(add, reg, &data, 1);
 }
 
 void VL53L0X_WriteByte_16Bit(uint8_t add, uint8_t reg, uint16_t data)
 {
-    uint8_t data2[2] = {0, 0};
-    data2[0] = data >> 8;
-    data2[1] = data;
-    HAL_I2C_Mem_Write(&hi2c2, (add << 1) | 0, reg, I2C_MEMADD_SIZE_8BIT, data2, 2, 0xffff);
+    uint8_t data2[2] = {(data >> 8) & 0xff, data & 0xff};
+    tof_mem_write(add, reg, data2, 2);
 }
 
 void VL53L0X_WriteByte_32Bit(uint8_t add, uint8_t reg, uint32_t data)
 {
-    uint8_t data2[4] = {0, 0, 0, 0};
-    data2[0] = data >> 24;
-    data2[1] = data >> 16;
-    data2[2] = data >> 8;
-    data2[3] = data;
-    HAL_I2C_Mem_Write(&hi2c2, (add << 1) | 0, reg, I2C_MEMADD_SIZE_8BIT, data2, 4, 0xffff);
+    uint8_t data2[4] = {(data >> 24) & 0xff, (data >> 16) & 0xff,
+                        (data >> 8) & 0xff,  data & 0xff};
+    tof_mem_write(add, reg, data2, 4);
 }
 
 uint8_t VL53L0X_ReadByte(uint8_t add, uint8_t reg)
 {
     uint8_t data = 0;
-    HAL_I2C_Mem_Read(&hi2c2, (add << 1) | 1, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 0xffff);
+    tof_mem_read(add, reg, &data, 1);
     return data;
 }
 
 uint16_t VL53L0X_ReadBytee_16Bit(uint8_t add, uint16_t reg)
 {
-    uint16_t data = 0;
-    uint8_t data2[2];
-    HAL_I2C_Mem_Read(&hi2c2, (add << 1) | 1, reg, I2C_MEMADD_SIZE_8BIT, data2, 2, 0xffff);
-    data = data2[0];
-    data = data << 8;
-    data += data2[1];
-
-    return data;
+    uint8_t data2[2] = {0, 0};
+    tof_mem_read(add, reg, data2, 2);
+    return ((uint16_t)data2[0] << 8) | data2[1];
 }
 
 // Read an arbitrary number of bytes from the sensor, starting at the given
 // register, into the given array
 void VL53L0X_readMulti(uint8_t add, uint8_t reg, uint8_t *dst, uint8_t count)
 {
-    HAL_I2C_Mem_Read(&hi2c2, (add << 1) | 1, reg, I2C_MEMADD_SIZE_8BIT, dst, count, 0xffff);
+    tof_mem_read(add, reg, dst, count);
 }
 
 // Write an arbitrary number of bytes from the given array to the sensor,
 // starting at the given register
 void VL53L0X_writeMulti(uint8_t add, uint8_t reg, uint8_t *src, uint8_t count)
 {
-    HAL_I2C_Mem_Write(&hi2c2, (add << 1) | 0, reg, I2C_MEMADD_SIZE_8BIT, src, count, 0xffff);
+    tof_mem_write(add, reg, src, count);
 }
 
 // Initialize sensor using sequence based on VL53L0X_DataInit(),
@@ -106,7 +107,7 @@ static uint8_t vl53l0_init_ok[4];    // 记录每个传感器是否初始化成�
 
 uint8_t VL53L0X_Init(uint8_t add, bool io_2v8)
 {
-    // VL53L0X_setTimeout(2000);  // 设置2秒超时，防止校准循环卡死
+    VL53L0X_setTimeout(2000);  // 设置2秒超时，防止校准循环卡死
 
     // check model ID register (value specified in datasheet)
     ID_register = VL53L0X_ReadByte(add, IDENTIFICATION_MODEL_ID); // VL53L0X_DEFAULT_I2C_ADDR1->C0
@@ -709,10 +710,10 @@ bool VL53L0X_getSpadInfo(uint8_t add, uint8_t *count, bool *type_is_aperture)
 
     VL53L0X_WriteByte(add, 0x94, 0x6b);
     VL53L0X_WriteByte(add, 0x83, 0x00);
-    //  startTimeout();
+    startTimeout();
     while (VL53L0X_ReadByte(add, 0x83) == 0x00)
     {
-        //    if (checkTimeoutExpired()) { return false; }
+        if (checkTimeoutExpired()) { return false; }
     }
     VL53L0X_WriteByte(add, 0x83, 0x01);
     tmp = VL53L0X_ReadByte(add, 0x92);
@@ -825,13 +826,13 @@ void multisensor_vl53l0_Init()
     }
 
     // 全部复位
-    HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID6_GPIO_Port, ID6_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID7_GPIO_Port, ID7_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(ID8_GPIO_Port, ID8_Pin, GPIO_PIN_RESET);
 
     // 传感器1 → 0x34
-    HAL_GPIO_WritePin(ID5_GPIO_Port, ID5_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(ID3_GPIO_Port, ID3_Pin, GPIO_PIN_SET);
     DWT_Delay(0.1f);
     if (VL53L0X_Init(VL53L0X_DEFAULT_I2C_ADDR, true)) {
         vl53l0_stop_vars[0] = stop_variable;

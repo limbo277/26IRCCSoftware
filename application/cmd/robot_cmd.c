@@ -112,7 +112,13 @@ static void RemoteControlSet(void) {
       //手动模式以后挡为正方向
       Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * -20.0f;
       Chassis_Cmd_Send.wz = rc_data[TEMP].rc.rocker_r_ * 0.02f;
-    } else {
+    }
+    else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
+      //小陀螺模式，底盘以当前角度为中心原地旋转，摇杆控制旋转速度
+      Chassis_Cmd_Send.target_yaw_angle = vision_recv_data->target_yaw;
+      Chassis_Cmd_Send.vx = rc_data[TEMP].rc.rocker_l1 * 20.0f;
+    }
+    else {
       Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
       Chassis_Cmd_Send.target_yaw_angle = IMU_data->Yaw;
     }
@@ -166,9 +172,9 @@ static void UPdonePlatform(void) {
 
     // 读取来自上位机的距离扫描值（后档方向）
   float BackToPlatformDistance = 9999.0f; // 修复：必须给一个超大默认值，绝不能是0，否则上位机离线时会自动瞬间通过所有的测距判定触发疯冲！
-  if (vision_recv_data->NeedValue!=0) {
-    BackToPlatformDistance=vision_recv_data->NeedValue;
-  }
+  // if (vision_recv_data->NeedValue1!=0) {
+  //   BackToPlatformDistance=vision_recv_data->NeedValue1;
+  // }
 
 
     // 灰度全部低于阈值
@@ -314,23 +320,14 @@ static void ModeJudge(void) {
   uint8_t best_priority = 0;
 
   static uint32_t fall_recover_timer = 0;
-  if (UnderPlatformDetect()) {
-    fall_recover_timer = DWT_GetTimeline_ms(); // 修复：检测到掉台边缘，锁存当前触发时间
-  }
 
   //P10：掉台检测后台运行一旦检测到立即介入启动返回平台，且维持硬退500ms避免在边缘抽搐震荡打滑
-  if (DWT_GetTimeline_ms() - fall_recover_timer < 500) {
+  if (UnderPlatformDetect()) {
     best_mode = AGV_Mode_RETURNPLATFORM;
     best_priority = 10;
     goto done;
   }
 
-  // P10：掉台检测（最高优先级）
-  // if (/* 掉台条件，如 TOF 对地距离突变 */) {
-  //     best_mode = AGV_Mode_RETURNPLATFORM;
-  //     best_priority = 10;
-  //     goto done;
-  // }
 
   // P9：敌方袭击（视觉检测到敌方）
   // if (/* 敌方袭击条件 */) {
@@ -476,7 +473,7 @@ static void AGV_Mode_Switch(void) {
     // 防掉落模式
     Chassis_Cmd_Send.vx = 0;
     Chassis_Cmd_Send.wz = 0;
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+    // Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
     break;
   case AGV_Mode_RETURNPLATFORM:
     // 掉台返回模式
@@ -486,7 +483,7 @@ static void AGV_Mode_Switch(void) {
     break;
   case AGV_Mode_ZERO_FORCE:
   default:
-    Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
+    // Chassis_Cmd_Send.chassis_mode = CHASSIS_ZERO_FORCE;
     break;
   }
 }
@@ -504,11 +501,11 @@ void RobotCMDTask() {
   VisionSend();
   RemoteControlSet();
 
-  /* ===== AGV 决策链：先选模式 → 再执行模式 ===== */
-  if (Chassis_Cmd_Send.chassis_mode == CHASSIS_AGV_MODE) {
-    ModeJudge();        // Step 1: 根据传感器条件选模式
-    AGV_Mode_Switch();  // Step 2: 根据模式填控制命令
-  }
+  // /* ===== AGV 决策链：先选模式 → 再执行模式 ===== */
+  // if (Chassis_Cmd_Send.chassis_mode == CHASSIS_AGV_MODE) {
+  //   ModeJudge();        // Step 1: 根据传感器条件选模式
+  //   AGV_Mode_Switch();  // Step 2: 根据模式填控制命令
+  // }
 
   /*Control Code End*/
   // 发布底盘命令与灰度传感器命令

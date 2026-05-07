@@ -33,7 +33,6 @@ void RobotInit()
 
     GraysensorInit(); // 初始化灰度传感器
 
-    TOF050CInit();
 
 
 
@@ -55,6 +54,6 @@ void RobotTask()
 
     GraysensorTask(); // 灰度传感器任务
 
-  TOF050CTask();
+  // TOF050CTask();
 
 }

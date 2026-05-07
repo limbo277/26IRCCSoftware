@@ -172,7 +172,6 @@ float ChassisAngleOffet(float cmd_yaw_speed) {
     return PIDCalculate(&Yaw_Angle_Velocity_Controller,-Chassis_Cmd_Recv.yaw_angle_speed, cmd_yaw_speed);
   }
 }
-void ChassisGraySensorAGV() {}
 
 /* 机器人底盘控制核心任务 */
 void ChassisTask() {

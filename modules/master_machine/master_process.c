@@ -37,7 +37,7 @@ void VisionSetLaserRanging(float laser_ranging_L0, float laser_ranging_L1, float
 
 void VisionSetChassisMode(AGV_Mode_e agv_mode)
 {
-    send_data.agv_mode = (float)agv_mode;
+    // send_data.agv_mode = (float)agv_mode;
 }
 void VisionSetAltitude(float yaw)
 {
@@ -163,7 +163,7 @@ void VisionSend()
     // TODO: code to set flag_register
     flag_register = 30 << 8 | 0b00000001;
     // 将数据转化为seasky协议的数据包
-    get_protocol_send_data(0x02, flag_register, &send_data.yaw, 6, send_buff, &tx_len);
+    get_protocol_send_data(0x02, flag_register, &send_data.yaw, 5, send_buff, &tx_len);
     USBTransmit(send_buff, tx_len);
 }
 

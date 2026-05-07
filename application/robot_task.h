@@ -16,7 +16,7 @@
 #include "buzzer.h"
 
 #include "bsp_log.h"
-
+#include "graysensor.h"
 #include "TOF_Sensors.h"
 
 osThreadId insTaskHandle;
@@ -144,26 +144,19 @@ __attribute__((noreturn)) void StartUITASK(void const *argument)
 {
     LOGINFO("[freeRTOS] UI Task Start");
     // MyUIInit();
+  // GraysensorInit(); // 初始化灰度传感器
+
+    TOF050CInit();
+
     LOGINFO("[freeRTOS] UI Init Done, communication with ref has established");
     for (;;)
     {
+      // GraysensorTask(); // 灰度传感器任务
+
+      TOF050CTask();
         // 每给裁判系统发送一包数据会挂起一次,详见UITask函数的refereeSend()
         // UITask();
         osDelay(1); // 即使没有任何UI需要刷新,也挂起一次,防止卡在UITask中无法切换
     }
 }
-// __attribute__((noreturn)) void StartTOF050CTASK(void const *argument)
-// {
-//     static float tof050c_dt;
-//     static float tof050c_start;
-//     LOGINFO("[freeRTOS] TOF050C Task Start");
-//     for (;;)
-//     {
-//         tof050c_start = DWT_GetTimeline_ms();
-//         TOF050CTask();
-//         tof050c_dt = DWT_GetTimeline_ms() - tof050c_start;
-//         if (tof050c_dt > 10)
-//             LOGERROR("[freeRTOS] TOF050C Task is being DELAY! dt = [%f]", &tof050c_dt);
-//         osDelay(10); // 100Hz
-//     }
-// }
+
