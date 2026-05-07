@@ -276,7 +276,7 @@ uint16_t VL6180X_ReadRangeSingleMillimeters(uint8_t addr_write,uint8_t addr_read
     VL6180X_Start_Range(addr_write,addr_read);
     /* Wait for measurement ready. */
     VL6180X_Poll_Range(addr_write,addr_read);
-    osDelay(30);
+    osDelay(20);
     return (uint16_t)scaling * VL6180_Read_Range(addr_write,addr_read);
 }
 
