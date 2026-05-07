@@ -143,6 +143,7 @@ modules/grayscale/grayscale.c \
 modules/vl53l0/vl53l0.c \
 modules/vl6180x/vl6180x.c \
 modules/vofa/vofa_usart.c \
+modules/preemptiveFSM/preemptiveFSM.c \
 application/chassis/chassis.c \
 application/cmd/robot_cmd.c \
 application/graysensor/graysensor.c \
@@ -265,6 +266,7 @@ C_INCLUDES =  \
 -Imodules/vofa \
 -Imodules/vl53l0 \
 -Imodules/vl6180x \
+-Imodules/preemptiveFSM \
 -Imodules \
 -IMiddlewares/ST/ARM/DSP/Inc \
 -IMiddlewares/ST/ARM/DSP/Include/dsp \

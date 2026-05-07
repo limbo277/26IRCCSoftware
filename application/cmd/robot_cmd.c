@@ -10,6 +10,7 @@
 #include "master_process.h"
 #include "message_center.h"
 #include "remote_control.h"
+#include "preemptiveFSM.h"
 // bsp
 #include "bsp_dwt.h"
 #include "bsp_log.h"
