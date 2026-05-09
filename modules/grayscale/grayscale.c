@@ -52,11 +52,14 @@ static void GrayscaleRxCallback()
     tx_flag = 1;
 
     // H7必须刷Cache (如果使用STM32H7)
-    #ifdef STM32H723xx
-    uint32_t aligned_addr = (uint32_t)buff & ~0x1FU;
-    uint32_t aligned_size = size + ((uint32_t)buff - aligned_addr);
-    SCB_InvalidateDCache_by_Addr((uint32_t *)aligned_addr, aligned_size);
-    #endif
+    // DTCM (0x20000000) 不支持 Cache 操作，跳过避免 HardFault
+    // #ifdef STM32H723xx
+    // if ((uint32_t)buff < 0x20000000 || (uint32_t)buff >= 0x20020000) {
+    //     uint32_t aligned_addr = (uint32_t)buff & ~0x1FU;
+    //     uint32_t aligned_size = size + ((uint32_t)buff - aligned_addr);
+    //     SCB_InvalidateDCache_by_Addr((uint32_t *)aligned_addr, aligned_size);
+    // }
+    // #endif
 
     // 把DMA收到的这一段数据，逐个字节喂进状态机
     for (uint16_t i = 0; i < size; i++)

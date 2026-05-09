@@ -25,7 +25,9 @@ typedef enum {
   PFSM_EVENT_NONE = 0, // 无事件
   PFSM_EVENT_TIMER,    // 超时事件
   /*Begin 自定义事件*/
-
+  PFSM_EVENT_FINISH_LOADPLATFORM,//完成登台
+  PFSM_EVENT_FALLDOWN_PLATFORM, // 掉台事件
+  PFSM_EVENT_FINDOUT_AIM,//发现目标事件9
   /*End 自定义事件*/
   PFSM_EVENT_COUNT, // 计数事件,勿要使用
 } PfsmEventId_e;
