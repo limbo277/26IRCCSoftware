@@ -87,8 +87,12 @@ typedef enum
     CHASSIS_NO_FOLLOW,         // 不跟随，允许全向平移
     CHASSIS_FOLLOW_GIMBAL_YAW, // 跟随模式，底盘叠加角度环控制
     CHASSIS_NORMAL,
-    CHASSIS_AGV_MODE,
 } chassis_mode_e;
+//控制模式设置
+typedef enum {
+  CONTROL_REMOTE = 0,
+  CONTROL_AGV,
+}contrl_mode_e;
 
 // 云台模式设置
 typedef enum
@@ -131,12 +135,7 @@ typedef struct
     float chassis_power_mx;
 } Chassis_Power_Data_s;
 
-typedef enum {
-  AGV_MODE_OFF = 0,
-  AGV_MODE_ONPLATFORM_FREESCAN,
-  AGV_MODE_ONPLATFORM_FOLLOW,
 
-}Chassis_AGV_Mode_e;
 /* ----------------CMD应用发布的控制数据,应当由gimbal/chassis/shoot订阅---------------- */
 /**
  * @brief 对于双板情况,遥控器和pc在云台,裁判系统在底盘
@@ -156,7 +155,6 @@ typedef struct
     float target_yaw_angle;
 
     chassis_mode_e chassis_mode;//底盘模式
-    Chassis_AGV_Mode_e agv_mode;//AGV模式
     int chassis_speed_buff;
     // UI部分
     //  ...

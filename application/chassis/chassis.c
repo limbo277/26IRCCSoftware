@@ -37,7 +37,6 @@ void ChassisInit() {
           {
               .speed_PID =
                   {
-
                       .Kp = 712.4f, // 40
                       .Ki = 23.2f,
                       .Kd = 44.856f,
@@ -46,7 +45,7 @@ void ChassisInit() {
                                  PID_Derivative_On_Measurement |
                                  PID_OutputFilter,
                       .MaxOut = 25000,
-                      .Output_LPF_RC = 0.3989f,
+                      .Output_LPF_RC = 0.6989f,
                       .Derivative_LPF_RC = 0.443f,
                   },
               .current_PID =
@@ -90,28 +89,28 @@ void ChassisInit() {
   Motor_Lb = DJIMotorInit(&Chassis_Motor_config);
 
   PID_Init_Config_s Yaw_Angle_Compensator_Config = {
-      .Kp = 0.8,
-      .Ki = 0.0,
-      .Kd = 0.1,
+      .Kp = 0.85f,
+      .Ki = 0.0f,
+      .Kd = 0.1f,
       // 对于角度这类由于跨越 ±180° 会发生瞬间跳变的量，绝对不能开启 PID_Derivative_On_Measurement（测量值微分）
       // 否则跨越 180 的瞬间测量值会跳变 360，导致 D 项算出几万的数值，让电机疯摇乃至转圈
       .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_OutputFilter,
       .IntegralLimit = 2000,
       .MaxOut = 5000,
-      .DeadBand = 0,
-      .Output_LPF_RC = 0.1,
+      .DeadBand = 0.1f,
+      .Output_LPF_RC = 0.1f,
   };
 
   PID_Init_Config_s Yaw_Angle_Velocity_Compensator_Config = {
-      .Kp = 10.0,
-      .Ki = 0.0,
-      .Kd = 1.2,
+      .Kp = 10.0f,
+      .Ki = 0.0f,
+      .Kd = 1.2f,
       .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit |
                  PID_Derivative_On_Measurement | PID_OutputFilter,
       .IntegralLimit = 2000,
       .MaxOut = 5000,
       .DeadBand = 2.f,
-      .Output_LPF_RC = 0.1,
+      .Output_LPF_RC = 0.1f,
   };
 
   PIDInit(&Yaw_Angle_Velocity_Controller,
